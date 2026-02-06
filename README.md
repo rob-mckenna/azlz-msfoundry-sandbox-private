@@ -507,33 +507,33 @@ scripts/tf-destroy.sh
 
 ## Cost Estimation (Monthly)
 
-### Dev Environment (Development/Testing)
+### Dev Environment (Development/Testing - East US2)
 
-| Component | SKU/Size | East US | East US2 |
-|-----------|----------|---------|----------|
-| VNet | - | $0 | $0 |
-| ACR | Premium | $50 | $50 |
-| API Management | StandardV2 (1 cap) | $720 | $744 |
-| ACA (1 replica @ 0.5 CPU) | Consumption | $18 | $19 |
-| Log Analytics | 30-day retention | $8 | $8 |
-| Jumpbox VM (Linux) | Standard_B2s | $36 | $36 |
-| Jumpbox VM (Windows) | Standard_D4s_v5 | $180 | $186 |
-| Azure Bastion | Basic | $365 | $377 |
-| **Total Dev** | | **~$1,377** | **~$1,420** |
+| Component | SKU/Size | Cost |
+|-----------|----------|------|
+| VNet | - | $0 |
+| ACR | Premium | $50 |
+| API Management | StandardV2 (1 cap) | $744 |
+| ACA (1 replica @ 0.5 CPU) | Consumption | $19 |
+| Log Analytics | 30-day retention | $8 |
+| Jumpbox VM (Linux) | Standard_B2s | $36 |
+| Jumpbox VM (Windows) | Standard_D4s_v5 | $186 |
+| Azure Bastion | Basic | $377 |
+| **Total Dev** | | **~$1,420** |
 
-### Prod Environment (Production Workloads)
+### Prod Environment (Production Workloads - East US2)
 
-| Component | SKU/Size | East US | East US2 |
-|-----------|----------|---------|----------|
-| VNet | - | $0 | $0 |
-| ACR | Premium | $50 | $50 |
-| API Management | StandardV2 (1 cap) | $720 | $744 |
-| ACA (5 replicas @ 0.5 CPU ea) | Consumption | $90 | $97 |
-| Log Analytics | 30-day retention | $8 | $8 |
-| Jumpbox VM (Linux) | Standard_B2s | $36 | $36 |
-| Jumpbox VM (Windows) | Standard_D4s_v5 | $180 | $186 |
-| Azure Bastion | Basic | $365 | $377 |
-| **Total Prod** | | **~$1,449** | **~$1,498** |
+| Component | SKU/Size | Cost |
+|-----------|----------|------|
+| VNet | - | $0 |
+| ACR | Premium | $50 |
+| API Management | StandardV2 (1 cap) | $744 |
+| ACA (5 replicas @ 0.5 CPU ea) | Consumption | $97 |
+| Log Analytics | 30-day retention | $8 |
+| Jumpbox VM (Linux) | Standard_B2s | $36 |
+| Jumpbox VM (Windows) | Standard_D4s_v5 | $186 |
+| Azure Bastion | Basic | $377 |
+| **Total Prod** | | **~$1,498** |
 
 **Cost Optimization Options:**
 - Use ACR Standard ($11/mo) if private endpoints not required
