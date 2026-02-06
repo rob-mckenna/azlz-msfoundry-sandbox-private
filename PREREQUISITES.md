@@ -155,13 +155,13 @@ docker --version
 
 - [ ] **Docker 20.10+** (optional - only if building images locally)
 
-#### .NET SDK 8.0 (if testing webapp locally)
+#### .NET SDK 10.0 (if testing webapp locally)
 ```bash
 dotnet --version
-# Should output version 8.0+
+# Should output version 10.0+
 ```
 
-- [ ] **.NET SDK 8.0+** (optional - only if modifying webapp code)
+- [ ] **.NET SDK 10.0+** (optional - only if modifying webapp code)
 
 #### jq (if parsing JSON in scripts)
 ```bash
