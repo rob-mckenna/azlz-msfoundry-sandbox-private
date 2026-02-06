@@ -1,0 +1,151 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - qa
+    paths:
+      - 'src/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  # =====================
+  # UNIT TESTS
+  # =====================
+  test:
+    name: Unit Tests (.NET)
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+
+      - name: Restore dependencies
+        run: |
+          cd src/webapp
+          dotnet restore
+
+      - name: Build application
+        run: |
+          cd src/webapp
+          dotnet build -c Release --no-restore
+
+      - name: Run unit tests
+        run: |
+          cd src/webapp
+          dotnet test -c Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" || EXIT_CODE=$?
+          exit ${EXIT_CODE:-0}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: src/webapp/**/test-results.trx
+
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: src/webapp/**/test-results.trx
+          check_name: .NET Unit Tests
+
+      - name: Code coverage
+        if: always()
+        run: |
+          cd src/webapp
+          echo "## Code Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Test results available in build artifacts" >> $GITHUB_STEP_SUMMARY
+
+  # =====================
+  # LINTING & CODE QUALITY
+  # =====================
+  lint:
+    name: Code Quality Checks
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+
+      - name: Restore dependencies
+        run: |
+          cd src/webapp
+          dotnet restore
+
+      - name: Analyze code style
+        run: |
+          cd src/webapp
+          dotnet build -c Release --no-restore /p:EnforceCodeStyleInBuild=true
+        continue-on-error: true
+
+      - name: Check for security vulnerabilities
+        run: |
+          cd src/webapp
+          dotnet list package --outdated --vulnerable || true
+
+  # =====================
+  # DOCKERFILE LINTING
+  # =====================
+  dockerfile:
+    name: Docker Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          ignore: DL3007,DL3008
+
+  # =====================
+  # SUMMARY
+  # =====================
+  summary:
+    name: Test Summary
+    needs: [test, lint, dockerfile]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Tests passed
+        if: needs.test.result == 'success'
+        run: |
+          echo "✓ All tests passed"
+
+      - name: Tests failed
+        if: needs.test.result == 'failure'
+        run: |
+          echo "✗ Tests failed"
+          exit 1
+
+      - name: Code quality checks
+        if: needs.lint.result == 'success'
+        run: |
+          echo "✓ Code quality checks passed"
+
+      - name: Docker lint passes
+        if: needs.dockerfile.result == 'success'
+        run: |
+          echo "✓ Dockerfile lint passes"

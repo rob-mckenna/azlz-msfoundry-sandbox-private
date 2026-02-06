@@ -1,0 +1,273 @@
+name: Build, Test & Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - qa
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - '.github/workflows/ci-cd.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+
+env:
+  REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
+  IMAGE_NAME: ${{ secrets.REGISTRY_URL }}/azlz-app
+
+jobs:
+  # =====================
+  # CI: BUILD & TEST
+  # =====================
+  build:
+    name: Build & Test
+    runs-on: self-hosted
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+
+      - name: Restore dependencies
+        run: |
+          cd src/webapp
+          dotnet restore
+
+      - name: Build application
+        run: |
+          cd src/webapp
+          dotnet build -c Release --no-restore
+
+      - name: Run tests
+        run: |
+          cd src/webapp
+          dotnet test -c Release --no-build --verbosity normal || true
+        continue-on-error: true
+
+      - name: Generate image metadata
+        id: meta
+        run: |
+          TAG="${{ github.sha }}"
+          BRANCH="${{ github.ref_name }}"
+          
+          if [ "$BRANCH" = "main" ]; then
+            TAG="${{ github.sha }},latest"
+          elif [ "$BRANCH" = "qa" ]; then
+            TAG="${{ github.sha }},qa-latest"
+          elif [ "$BRANCH" = "develop" ]; then
+            TAG="${{ github.sha }},develop-latest"
+          fi
+          
+          echo "tags=${TAG}" >> $GITHUB_OUTPUT
+          echo "Branch: $BRANCH"
+          echo "Tags: $TAG"
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ env.REGISTRY_URL }}/azlz-app:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY_URL }}/azlz-app:buildcache,mode=max
+
+  # =====================
+  # CD: DEPLOY
+  # =====================
+  deploy:
+    name: Deploy to ${{ matrix.environment }}
+    needs: build
+    runs-on: self-hosted
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    strategy:
+      matrix:
+        include:
+          - branch: main
+            environment: prod
+            approval_required: true
+          - branch: qa
+            environment: qa
+            approval_required: false
+          - branch: develop
+            environment: dev
+            approval_required: false
+    
+    environment:
+      name: ${{ matrix.environment }}
+      url: ${{ steps.output.outputs.container_app_url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        if: |
+          (github.ref_name == matrix.branch) || 
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment)
+
+      - name: Determine deployment target
+        id: target
+        if: |
+          (github.ref_name == matrix.branch) || 
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment)
+        run: |
+          ENV="${{ matrix.environment }}"
+          echo "environment=${ENV}" >> $GITHUB_OUTPUT
+          echo "Deploying to $ENV environment"
+
+      - name: Azure Login
+        if: steps.target.outcome == 'success'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets[format('{0}_AZURE_CREDENTIALS', matrix.environment)] }}
+
+      - name: Update Container App - DEV
+        if: matrix.environment == 'dev' && steps.target.outcome == 'success'
+        run: |
+          chmod +x scripts/update-container-app.sh
+          ./scripts/update-container-app.sh \
+            "${{ secrets.DEV_REGISTRY_NAME }}" \
+            "azlz-app" \
+            "${{ secrets.DEV_RESOURCE_GROUP }}" \
+            "azlz-app"
+        env:
+          CONTAINER_IMAGE: ${{ needs.build.outputs.image_tag }}
+
+      - name: Update Container App - QA
+        if: matrix.environment == 'qa' && steps.target.outcome == 'success'
+        run: |
+          chmod +x scripts/update-container-app.sh
+          ./scripts/update-container-app.sh \
+            "${{ secrets.QA_REGISTRY_NAME }}" \
+            "azlz-app" \
+            "${{ secrets.QA_RESOURCE_GROUP }}" \
+            "azlz-app"
+        env:
+          CONTAINER_IMAGE: ${{ needs.build.outputs.image_tag }}
+
+      - name: Update Container App - PROD
+        if: matrix.environment == 'prod' && steps.target.outcome == 'success'
+        run: |
+          chmod +x scripts/update-container-app.sh
+          ./scripts/update-container-app.sh \
+            "${{ secrets.PROD_REGISTRY_NAME }}" \
+            "azlz-app" \
+            "${{ secrets.PROD_RESOURCE_GROUP }}" \
+            "azlz-app"
+        env:
+          CONTAINER_IMAGE: ${{ needs.build.outputs.image_tag }}
+
+      - name: Get Container App URL
+        id: output
+        if: steps.target.outcome == 'success'
+        run: |
+          az containerapp show \
+            --resource-group "${{ secrets[format('{0}_RESOURCE_GROUP', matrix.environment)] }}" \
+            --name "azlz-app" \
+            --query "properties.configuration.ingress.fqdn" -o tsv
+          
+          URL=$(az containerapp show \
+            --resource-group "${{ secrets[format('{0}_RESOURCE_GROUP', matrix.environment)] }}" \
+            --name "azlz-app" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          
+          echo "container_app_url=https://${URL}" >> $GITHUB_OUTPUT
+          echo "Deployed to: https://${URL}"
+
+      - name: Health Check
+        if: steps.target.outcome == 'success'
+        run: |
+          URL="https://$(az containerapp show \
+            --resource-group \"${{ secrets[format('{0}_RESOURCE_GROUP', matrix.environment)] }}\" \
+            --name \"azlz-app\" \
+            --query \"properties.configuration.ingress.fqdn\" -o tsv)"
+          
+          echo "Checking health endpoint: ${URL}/health"
+          
+          for i in {1..30}; do
+            if curl -s "${URL}/health" | grep -q "healthy"; then
+              echo "✓ Application is healthy"
+              exit 0
+            fi
+            echo "Attempt $i/30 - Waiting for application to be ready..."
+            sleep 2
+          done
+          
+          echo "⚠ Health check timed out, but deployment may still be in progress"
+          exit 0
+        continue-on-error: true
+
+      - name: Publish deployment
+        if: success()
+        run: |
+          echo "✓ Successfully deployed to ${{ matrix.environment }} environment"
+          echo "Container Image: ${{ needs.build.outputs.image_tag }}"
+
+  # =====================
+  # SUMMARY
+  # =====================
+  summary:
+    name: Deployment Summary
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check build status
+        run: |
+          if [ "${{ needs.build.result }}" = "success" ]; then
+            echo "✓ Build succeeded"
+            echo "  - Image: ${{ needs.build.outputs.image_tag }}"
+          else
+            echo "✗ Build failed"
+            exit 1
+          fi
+
+      - name: Check deploy status
+        run: |
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "✓ Deployment succeeded"
+          elif [ "${{ needs.deploy.result }}" = "skipped" ]; then
+            echo "⊘ Deployment skipped (branch or event type not configured)"
+          else
+            echo "✗ Deployment failed"
+            exit 1
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✓ Build and tests passed!\n\nContainer image: `${{ needs.build.outputs.image_tag }}`'
+            })

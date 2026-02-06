@@ -1,0 +1,172 @@
+name: Deploy Infrastructure (Terraform)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+      action:
+        description: 'Terraform action'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+        default: plan
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # =====================
+  # TERRAFORM PLAN/APPLY
+  # =====================
+  infrastructure:
+    name: Terraform ${{ github.event.inputs.action }} (${{ github.event.inputs.environment }})
+    runs-on: self-hosted
+    
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    
+    env:
+      TF_VERSION: '1.5'
+      TF_WORKING_DIR: infrastructure/terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets[format('{0}_AZURE_CREDENTIALS', github.event.inputs.environment)] }}
+
+      - name: Terraform Format Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "Checking Terraform formatting..."
+          terraform fmt -check -recursive || {
+            echo "Run: terraform fmt -recursive"
+            exit 1
+          }
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "Initializing Terraform..."
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets[format('{0}_TF_BACKEND_RG', github.event.inputs.environment)] }}" \
+            -backend-config="storage_account_name=${{ secrets[format('{0}_TF_BACKEND_STORAGE', github.event.inputs.environment)] }}" \
+            -backend-config="container_name=${{ secrets[format('{0}_TF_BACKEND_CONTAINER', github.event.inputs.environment)] }}" \
+            -backend-config="key=${{ github.event.inputs.environment }}.tfstate" \
+            -upgrade
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "Validating Terraform configuration..."
+          terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "Planning Terraform deployment to ${{ github.event.inputs.environment }}..."
+          
+          terraform plan \
+            -var-file="${{ github.event.inputs.environment }}.tfvars" \
+            -no-color \
+            -out=tfplan
+          
+          echo "plan_success=true" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Generate Plan Summary
+        if: steps.plan.outputs.plan_success == 'true'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          terraform show -no-color tfplan | head -50 >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*(Showing first 50 lines - full plan available in logs)*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply' && steps.plan.outputs.plan_success == 'true'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "Applying Terraform configuration to ${{ github.event.inputs.environment }}..."
+          terraform apply -no-color -auto-approve tfplan
+
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy' && steps.plan.outputs.plan_success == 'true'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "⚠️  DESTROYING INFRASTRUCTURE FOR ${{ github.event.inputs.environment }}"
+          echo "This will remove all resources defined in Terraform."
+          
+          terraform destroy \
+            -var-file="${{ github.event.inputs.environment }}.tfvars" \
+            -no-color \
+            -auto-approve
+
+      - name: Capture Outputs
+        if: github.event.inputs.action == 'apply' && success()
+        id: output
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "## Terraform Outputs - ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          terraform output -no-color >> $GITHUB_STEP_SUMMARY
+
+      - name: Failure Summary
+        if: failure()
+        run: |
+          echo "## ⚠️ Terraform Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Environment: **${{ github.event.inputs.environment }}**" >> $GITHUB_STEP_SUMMARY
+          echo "Action: **${{ github.event.inputs.action }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the logs for details." >> $GITHUB_STEP_SUMMARY
+
+  # =====================
+  # SUMMARY
+  # =====================
+  summary:
+    name: Summary
+    needs: infrastructure
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Report Success
+        if: needs.infrastructure.result == 'success'
+        run: |
+          echo "✓ Terraform ${{ github.event.inputs.action }} completed successfully"
+          echo "  Environment: ${{ github.event.inputs.environment }}"
+          echo "  Workflow: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Report Failure
+        if: needs.infrastructure.result == 'failure'
+        run: |
+          echo "✗ Terraform ${{ github.event.inputs.action }} failed"
+          echo "  Environment: ${{ github.event.inputs.environment }}"
+          echo "  Workflow: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          exit 1

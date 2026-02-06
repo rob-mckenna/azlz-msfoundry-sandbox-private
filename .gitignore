@@ -1,0 +1,94 @@
+# .gitignore for Azure Landing Zone Project
+
+# Environment-specific files
+.env
+.env.local
+.env.*.local
+*.user
+
+# Build outputs
+bin/
+obj/
+.vs/
+.vscode/
+*.o
+*.a
+*.so
+*.dll
+*.exe
+*.dylib
+
+# Package files
+*.nupkg
+*.snupkg
+*.tar.gz
+
+# Test results
+TestResults/
+*.trx
+coverage/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Azure-specific
+local.settings.json
+.azure/
+
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars      # Block local environment config (DO NOT COMMIT)
+local.tfvars          # Block local overrides (DO NOT COMMIT)
+*.auto.tfvars         # Block auto-loaded local configs (DO NOT COMMIT)
+# NOTE: dev.tfvars, qa.tfvars, prod.tfvars are committed as templates
+# They contain ONLY placeholders - actual secrets come from GitHub Secrets
+.terraform.lock.hcl
+terraform.log
+tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Docker
+docker-compose.override.yml
+
+# Node (if used)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Python (if used)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.bak
+
+# Secrets
+*secrets*
+*password*
+*token*
+*.pem
+*.key
+
+# OS-specific
+.DS_Store
+Thumbs.db
