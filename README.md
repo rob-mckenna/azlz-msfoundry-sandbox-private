@@ -505,26 +505,45 @@ chmod +x scripts/tf-destroy.sh
 scripts/tf-destroy.sh
 ```
 
-## Cost Estimation (Monthly, East US)
+## Cost Estimation (Monthly)
 
-| Component | SKU/Size | Est. Cost |
-|-----------|----------|-----------|
-| VNet | - | $0.045 |
-| ACR | Premium | $167/day (~$5,000/mo) |
-| API Management | StandardV2 (1 unit) | $600-700 |
-| ACA (1 replica @ 0.5 CPU) | Consumption | $15-25 |
-| Log Analytics | Pay-as-you-go | $5-15 |
-| Jumpbox VM | B2s (730 hrs) | $35-40 |
-| Bastion | Basic | $5.00 |
-| **Total** | | ~$5,660-5,785 |
+### Dev Environment (Development/Testing)
+
+| Component | SKU/Size | East US | East US2 |
+|-----------|----------|---------|----------|
+| VNet | - | $0 | $0 |
+| ACR | Premium | $50 | $50 |
+| API Management | StandardV2 (1 cap) | $720 | $744 |
+| ACA (1 replica @ 0.5 CPU) | Consumption | $18 | $19 |
+| Log Analytics | 30-day retention | $8 | $8 |
+| Jumpbox VM (Linux) | Standard_B2s | $36 | $36 |
+| Jumpbox VM (Windows) | Standard_D4s_v5 | $180 | $186 |
+| Azure Bastion | Basic | $365 | $377 |
+| **Total Dev** | | **~$1,377** | **~$1,420** |
+
+### Prod Environment (Production Workloads)
+
+| Component | SKU/Size | East US | East US2 |
+|-----------|----------|---------|----------|
+| VNet | - | $0 | $0 |
+| ACR | Premium | $50 | $50 |
+| API Management | StandardV2 (1 cap) | $720 | $744 |
+| ACA (5 replicas @ 0.5 CPU ea) | Consumption | $90 | $97 |
+| Log Analytics | 30-day retention | $8 | $8 |
+| Jumpbox VM (Linux) | Standard_B2s | $36 | $36 |
+| Jumpbox VM (Windows) | Standard_D4s_v5 | $180 | $186 |
+| Azure Bastion | Basic | $365 | $377 |
+| **Total Prod** | | **~$1,449** | **~$1,498** |
 
 **Cost Optimization Options:**
-- Use ACR Standard ($50/mo) if private endpoints not required
+- Use ACR Standard ($11/mo) if private endpoints not required
 - Use APIM Developer tier ($50/mo) for dev/test environments
-- Disable Bastion/Jumpbox when not actively needed
-- Use APIM Consumption tier for variable workloads
+- Scale ACA to zero replicas when not in use (serverless)
+- Disable Bastion ($365/mo) when not needed or use on-demand pricing
+- Use Spot VMs for jumpbox (saves 60-70%, but can be preempted)
+- Reserve instances for longer commitments (20-50% savings)
 
-*Note: Costs vary by region and usage. Use [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/) for accurate estimates.*
+*Note: Pricing as of February 2026. Use [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/) for real-time estimates.*
 
 ## License
 
