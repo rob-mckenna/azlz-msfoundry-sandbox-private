@@ -373,50 +373,77 @@ VM Metrics:
 
 ### 7. Cost Optimization
 
-#### SKU Selection
+#### SKU Selection (Monthly, East US pricing)
 ```
-ACR:
-  ├── Basic: $5/mo (0-10 GB storage)
+ACR (Azure Container Registry):
+  ├── Standard: $11/mo (100 GB storage, 100k pulls)
   │   └── Good for: Dev/test, lightweight workloads
-  ├── Standard: $20/mo (100 GB storage)
-  │   └── Good for: Small production workloads
-  └── Premium: $50/mo (500 GB storage)
-      └── Good for: Large enterprise, geo-replication
+  ├── Premium: $50/mo (500 GB storage, unlimited pulls)
+  │   └── Good for: Private endpoints, geo-replication, production
+  └── Premium + Private Endpoints: ~$50/mo additional networking
 
-ACA (Consumption Plan):
+APIM (API Management):
+  ├── Developer: $50/mo (no SLA, dev only)
+  ├── Standard: $150/unit/mo (99.9% SLA)
+  ├── StandardV2: $720/mo (99.99% SLA, auto-scaling)
+  └── Note: Scaling adds $600+ per additional unit
+
+ACA (Container Apps, Consumption Plan):
   ├── Pricing: Per vCPU-hour + memory-hour
-  ├── Auto-scale: 0 replicas (serverless)
-  └── Cost: ~$0.0278 per vCPU-hour
+  ├── ~$0.0278/vCPU-hour + $0.0111/GB-hour
+  ├── 0.5 vCPU, 1GB RAM = ~$20-23/month per replica
+  └── Auto-scales to zero when no requests (serverless)
 
-VM (B-series):
-  ├── B2s: ~$40/mo (burstable, 2 vCPU, 4 GB RAM)
-  ├── B1s: ~$10/mo (burstable, 1 vCPU, 1 GB RAM)
-  └── Good for: Jumpbox, dev environments
+Jumpbox VMs:
+  ├── Linux B2s: $36/mo (2 vCPU, 4GB RAM, burstable)
+  ├── Windows D4s_v5: $180/mo (4 vCPU, 16GB RAM, dedicated)
+  ├── Spot VMs: 60-70% discount if preemption acceptable
+  └── Good for: Development, bastion, CI/CD runners
 
-Bastion:
-  ├── Basic: $5/mo
-  └── Standard: $30/mo (aggregated bandwidth)
+Azure Bastion:
+  ├── Basic: $5.50/hour = ~$365/month (hourly billing)
+  ├── Standard: $15/hour = ~$1,095/month (bundled bandwidth)
+  └── Note: Budget-friendly alternative = Private Link to VMs
 
 Log Analytics:
-  ├── Pay-as-you-go: $0.50-1.00 per GB ingested
-  ├── Commitment: 100 GB/day = $250/mo
-  └── 30-day retention: Typical for non-critical logs
+  ├── Pay-as-you-go: $2.99/GB ingested, $0.90/GB retention
+  ├── Commitment tier: 100 GB/day = ~$190/mo
+  ├── 30-day retention: Good for dev/test environments
+  └── Free tier: 5GB/day (limited to 7 days)
 ```
 
-#### Cost Reduction Strategies
+#### Current Deployment Costs
+
+**Dev Environment** (~$1,377/mo in East US):
+- ACR Premium: $50/mo
+- APIM StandardV2: $720/mo
+- ACA (1 replica): $23/mo
+- VMs (1 Linux B2s + 1 Windows D4s_v5): $216/mo
+- Azure Bastion Basic: $365/mo
+- Log Analytics: $8/mo
+
+**Cost Reduction Strategies**
 ```
-1. Auto-scaling to zero (ACA Consumption)
-   └── Saves 90%+ on idle time
+1. ACR Standard instead of Premium
+   └── Saves $39/mo if private endpoints not required
 
-2. Spot VMs for jumpbox
-   └── Saves 60-70% on compute
+2. APIM Developer tier for non-production
+   └── Saves $670/mo but has lower SLA/limits
 
-3. Shared Log Analytics
-   └── Consolidate multiple apps to 1 workspace
+3. Disable Bastion when not in use
+   └── Saves $365/mo (hourly billing only charges when running)
 
-4. Reserved Instances (long-term)
-   └── 1-year: 20-30% discount
-   └── 3-year: 40-50% discount
+4. Scale ACA to Zero
+   └── Container Apps automatically scales to 0 replicas
+   └── Saves $23/mo per replica when idle
+
+5. Spot VMs for development
+   └── Standard_B2s Spot: ~$11/mo (70% savings)
+   └── Risk: VMs preempted with 30s notice
+
+6. Reserved Instances (longer commitments)
+   └── 1-year reservation: 20-30% discount on VMs
+   └── 3-year reservation: 40-50% discount on VMs
 
 5. Bastion Basic tier
    └── Sufficient for most use cases

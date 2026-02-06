@@ -268,7 +268,8 @@ az network public-ip list-usage --location eastus --output table
 ```
 
 - [ ] **Spending limit** is disabled OR high enough for test deployment
-  - Default deployment cost: ~$50-100/month (DEV environment)
+  - Default deployment cost: ~$1,377/month (DEV environment in East US)
+  - See [cost estimation](INDEX.md#cost-estimation) for full details by region
 
 ---
 

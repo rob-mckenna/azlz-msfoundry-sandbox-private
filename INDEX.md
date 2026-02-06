@@ -285,22 +285,42 @@ terraform apply tfplan
 
 ## Cost Estimation
 
-Monthly (East US, dev environment):
-| Component | SKU/Size | Est. Cost |
-|-----------|----------|-----------|
-| VNet | - | $0.05 |
-| ACR | Premium | $167/day (~$5,000/mo) |
-| API Management | StandardV2 (1 unit) | $600-700 |
-| ACA (1 replica) | Consumption | $15-25 |
-| Log Analytics | 30-day retention | $5-15 |
-| Jumpbox VM | B2s | $35-40 |
-| Bastion | Basic | $5 |
-| **Total** | | ~$5,660-5,785 |
+### Dev Environment (per month)
 
-**Note**: For cost-optimized dev/test, consider:
-- ACR Standard ($50/mo) if private endpoints not required
-- APIM Developer tier ($50/mo) for non-production
-- Disabling Bastion/Jumpbox when not needed
+| Component | SKU/Size | East US | East US2 |
+|-----------|----------|---------|----------|
+| VNet | - | $0 | $0 |
+| ACR | Premium | $50 | $50 |
+| API Management | StandardV2 (1 cap) | $720 | $744 |
+| ACA | Consumption (1 replica, 0.5 vCPU) | $18 | $19 |
+| Log Analytics | 30-day retention | $8 | $8 |
+| Jumpbox VM (Linux) | Standard_B2s | $36 | $36 |
+| Jumpbox VM (Windows) | Standard_D4s_v5 | $180 | $186 |
+| Azure Bastion | Basic (hourly) | $365 | $377 |
+| **Total Dev** | | **~$1,377** | **~$1,420** |
+
+### Prod Environment (per month)
+
+| Component | SKU/Size | East US | East US2 |
+|-----------|----------|---------|----------|
+| VNet | - | $0 | $0 |
+| ACR | Premium | $50 | $50 |
+| API Management | StandardV2 (1 cap) | $720 | $744 |
+| ACA | Consumption (5 replicas, 0.5 vCPU ea) | $90 | $97 |
+| Log Analytics | 30-day retention | $8 | $8 |
+| Jumpbox VM (Linux) | Standard_B2s | $36 | $36 |
+| Jumpbox VM (Windows) | Standard_D4s_v5 | $180 | $186 |
+| Azure Bastion | Basic (hourly) | $365 | $377 |
+| **Total Prod** | | **~$1,449** | **~$1,498** |
+
+### Cost Optimization Tips
+
+- **ACR Standard**: $10/mo if private endpoints not required
+- **APIM**: Use Developer tier ($50/mo) for non-production testing
+- **Bastion**: $5-10/day on-demand pricing available; disable when not in use
+- **ACA Scaling**: Reduce max_replicas in dev; scale more aggressively in prod
+- **Reserved Instances**: Purchase 1-3 year reserved capacity for 20-40% savings
+- **Spot VMs**: Use for non-critical workloads to reduce 70% of VM costs
 
 ## Next Steps
 
