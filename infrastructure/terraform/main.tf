@@ -10,6 +10,7 @@ locals {
   bastion_subnet_name = "AzureBastionSubnet"
   apim_subnet_name    = "${var.project_name}-apim-subnet"
   cicd_subnet_name    = "${var.project_name}-cicd-subnet"
+  foundry_subnet_name = "${var.project_name}-foundry-subnet"
 
   nsg_acr_name     = "${var.project_name}-acr-nsg"
   nsg_aca_name     = "${var.project_name}-aca-nsg"
@@ -21,19 +22,21 @@ locals {
   jumpbox_nic_name = "${var.project_name}-jumpbox-nic"
   jumpbox_vm_name  = "${var.project_name}-jumpbox-vm"
   jumpbox_pip_name = "${var.project_name}-jumpbox-pip"
-  
+
   jumpbox_windows_nic_name = "${var.project_name}-jumpbox-win-nic"
   jumpbox_windows_vm_name  = "${var.project_name}-jumpbox-win-vm"
   jumpbox_windows_pip_name = "${var.project_name}-jumpbox-win-pip"
-  
+
   bastion_name     = "${var.project_name}-bastion"
   bastion_pip_name = "${var.project_name}-bastion-pip"
 
-  aca_environment_name      = "${var.project_name}-aca-env-${var.environment}"
-  cicd_environment_name     = "${var.project_name}-cicd-env-${var.environment}"
-  container_app_name        = "${var.project_name}-app"
-  github_runner_name        = "${var.project_name}-runner"
-  apim_name                 = "${var.project_name}-apim-${local.unique_suffix}"
+  aca_environment_name          = "${var.project_name}-aca-env-${var.environment}"
+  cicd_environment_name         = "${var.project_name}-cicd-env-${var.environment}"
+  container_app_name            = "${var.project_name}-app"
+  github_runner_name            = "${var.project_name}-runner"
+  apim_name                     = "${var.project_name}-apim-${local.unique_suffix}"
+  foundry_name                  = "${var.project_name}fdry${local.unique_suffix}${var.environment}"
+  foundry_private_endpoint_name = "${var.project_name}-foundry-pe"
 
   log_analytics_workspace_name = "${var.project_name}-law-${var.environment}"
   application_insights_name    = "${var.project_name}-ai-${var.environment}"
@@ -446,6 +449,15 @@ resource "azurerm_subnet_network_security_group_association" "cicd" {
   network_security_group_id = azurerm_network_security_group.cicd[0].id
 }
 
+resource "azurerm_subnet" "foundry" {
+  name                 = local.foundry_subnet_name
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [var.foundry_subnet_address_space]
+
+  private_endpoint_network_policies = "Disabled"
+}
+
 # =====================
 # CONTAINER REGISTRY
 # =====================
@@ -463,9 +475,12 @@ resource "azurerm_container_registry" "main" {
 
   quarantine_policy_enabled = false
 
-  retention_policy {
-    days    = 30
-    enabled = true
+  dynamic "retention_policy" {
+    for_each = var.acr_sku == "Premium" ? [1] : []
+    content {
+      days    = 30
+      enabled = true
+    }
   }
 
   trust_policy {
@@ -477,6 +492,161 @@ resource "azurerm_container_registry" "main" {
   }
 
   tags = local.common_tags
+}
+
+# =====================
+# MICROSOFT FOUNDRY
+# =====================
+
+resource "azapi_resource" "foundry_account" {
+  type                      = "Microsoft.CognitiveServices/accounts@2025-06-01"
+  name                      = local.foundry_name
+  parent_id                 = azurerm_resource_group.main.id
+  location                  = azurerm_resource_group.main.location
+  schema_validation_enabled = false
+
+  body = {
+    kind = "AIServices"
+    sku = {
+      name = var.foundry_sku
+    }
+    identity = {
+      type = "SystemAssigned"
+    }
+    properties = {
+      allowProjectManagement = true
+      customSubDomainName    = local.foundry_name
+      disableLocalAuth       = false
+      publicNetworkAccess    = var.enable_foundry_private_endpoint ? "Disabled" : "Enabled"
+    }
+  }
+}
+
+resource "azapi_resource" "foundry_project" {
+  type                      = "Microsoft.CognitiveServices/accounts/projects@2025-06-01"
+  name                      = var.foundry_project_name
+  parent_id                 = azapi_resource.foundry_account.id
+  location                  = azurerm_resource_group.main.location
+  schema_validation_enabled = false
+
+  body = {
+    sku = {
+      name = var.foundry_sku
+    }
+    identity = {
+      type = "SystemAssigned"
+    }
+    properties = {
+      displayName = var.foundry_project_name
+      description = var.foundry_project_description
+    }
+  }
+
+  depends_on = [
+    azapi_resource.foundry_account
+  ]
+}
+
+# =====================
+# PRIVATE DNS ZONES FOR FOUNDRY
+# =====================
+
+resource "azurerm_private_dns_zone" "foundry_cognitiveservices" {
+  count = var.enable_foundry_private_endpoint ? 1 : 0
+
+  name                = "privatelink.cognitiveservices.azure.com"
+  resource_group_name = azurerm_resource_group.main.name
+
+  tags = local.common_tags
+}
+
+resource "azurerm_private_dns_zone" "foundry_openai" {
+  count = var.enable_foundry_private_endpoint ? 1 : 0
+
+  name                = "privatelink.openai.azure.com"
+  resource_group_name = azurerm_resource_group.main.name
+
+  tags = local.common_tags
+}
+
+resource "azurerm_private_dns_zone" "foundry_services_ai" {
+  count = var.enable_foundry_private_endpoint ? 1 : 0
+
+  name                = "privatelink.services.ai.azure.com"
+  resource_group_name = azurerm_resource_group.main.name
+
+  tags = local.common_tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "foundry_cognitiveservices" {
+  count = var.enable_foundry_private_endpoint ? 1 : 0
+
+  name                  = "${azurerm_virtual_network.main.name}-foundry-cog-link"
+  resource_group_name   = azurerm_resource_group.main.name
+  private_dns_zone_name = azurerm_private_dns_zone.foundry_cognitiveservices[0].name
+  virtual_network_id    = azurerm_virtual_network.main.id
+
+  tags = local.common_tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "foundry_openai" {
+  count = var.enable_foundry_private_endpoint ? 1 : 0
+
+  name                  = "${azurerm_virtual_network.main.name}-foundry-openai-link"
+  resource_group_name   = azurerm_resource_group.main.name
+  private_dns_zone_name = azurerm_private_dns_zone.foundry_openai[0].name
+  virtual_network_id    = azurerm_virtual_network.main.id
+
+  tags = local.common_tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "foundry_services_ai" {
+  count = var.enable_foundry_private_endpoint ? 1 : 0
+
+  name                  = "${azurerm_virtual_network.main.name}-foundry-services-ai-link"
+  resource_group_name   = azurerm_resource_group.main.name
+  private_dns_zone_name = azurerm_private_dns_zone.foundry_services_ai[0].name
+  virtual_network_id    = azurerm_virtual_network.main.id
+
+  tags = local.common_tags
+}
+
+# =====================
+# PRIVATE ENDPOINT FOR FOUNDRY
+# =====================
+
+resource "azurerm_private_endpoint" "foundry" {
+  count = var.enable_foundry_private_endpoint ? 1 : 0
+
+  name                = local.foundry_private_endpoint_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  subnet_id           = azurerm_subnet.foundry.id
+
+  private_service_connection {
+    name                           = "${local.foundry_name}-psc"
+    is_manual_connection           = false
+    private_connection_resource_id = azapi_resource.foundry_account.id
+    subresource_names              = ["account"]
+  }
+
+  private_dns_zone_group {
+    name = "default"
+    private_dns_zone_ids = [
+      azurerm_private_dns_zone.foundry_cognitiveservices[0].id,
+      azurerm_private_dns_zone.foundry_openai[0].id,
+      azurerm_private_dns_zone.foundry_services_ai[0].id
+    ]
+  }
+
+  tags = local.common_tags
+
+  depends_on = [
+    azapi_resource.foundry_account,
+    azurerm_private_dns_zone_virtual_network_link.foundry_cognitiveservices,
+    azurerm_private_dns_zone_virtual_network_link.foundry_openai,
+    azurerm_private_dns_zone_virtual_network_link.foundry_services_ai
+  ]
 }
 
 # =====================
@@ -627,9 +797,9 @@ resource "azurerm_api_management_logger" "app_insights" {
 resource "azurerm_api_management_diagnostic" "app_insights" {
   count = var.enable_apim_logging && var.enable_application_insights ? 1 : 0
 
-  identifier              = "applicationinsights"
-  resource_group_name     = azurerm_resource_group.main.name
-  api_management_name     = azurerm_api_management.main.name
+  identifier               = "applicationinsights"
+  resource_group_name      = azurerm_resource_group.main.name
+  api_management_name      = azurerm_api_management.main.name
   api_management_logger_id = azurerm_api_management_logger.app_insights[0].id
 
   sampling_percentage       = 100
@@ -820,9 +990,9 @@ resource "azurerm_user_assigned_identity" "cicd" {
 resource "azurerm_role_assignment" "cicd_acr_pull" {
   count = var.enable_cicd_runner ? 1 : 0
 
-  scope              = azurerm_container_registry.main.id
+  scope                = azurerm_container_registry.main.id
   role_definition_name = "AcrPull"
-  principal_id       = azurerm_user_assigned_identity.cicd[0].principal_id
+  principal_id         = azurerm_user_assigned_identity.cicd[0].principal_id
 }
 
 # =====================

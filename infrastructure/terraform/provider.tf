@@ -15,4 +15,6 @@ provider "azurerm" {
   skip_provider_registration = false
 }
 
+provider "azapi" {}
+
 data "azurerm_client_config" "current" {}

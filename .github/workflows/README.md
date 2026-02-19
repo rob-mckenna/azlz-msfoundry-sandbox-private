@@ -99,7 +99,7 @@ Continuous testing and code quality checks.
 
 4. **GitHub Secrets** configured per environment
 
-**Detailed setup:** See [WORKFLOWS-SETUP.md](.github/WORKFLOWS-SETUP.md)
+**Detailed setup:** See [WORKFLOWS-SETUP.md](../WORKFLOWS-SETUP.md)
 
 ## Running Workflows
 
@@ -281,7 +281,7 @@ Use Terraform workspaces for multi-environment state:
 
 ```bash
 terraform workspace select dev
-terraform apply -var-file=variables.tfvars
+terraform apply -var-file=dev.tfvars
 ```
 
 ## Troubleshooting
@@ -393,17 +393,17 @@ gh deployment list --environment prod
 
 ## Related Documentation
 
-- [WORKFLOWS-SETUP.md](.github/WORKFLOWS-SETUP.md) - Detailed setup instructions
-- [README.md](../README.md) - Main project documentation
-- [CI-CD-RUNNER.md](../CI-CD-RUNNER.md) - Self-hosted runner setup
-- [TERRAFORM.md](../TERRAFORM.md) - Infrastructure as Code guide
+- [WORKFLOWS-SETUP.md](../WORKFLOWS-SETUP.md) - Detailed setup instructions
+- [README.md](../../README.md) - Main project documentation
+- [CI-CD-RUNNER.md](../../CI-CD-RUNNER.md) - Self-hosted runner setup
+- [TERRAFORM.md](../../TERRAFORM.md) - Infrastructure as Code guide
 
 ## Support
 
 For workflow issues:
 1. Check workflow logs in **Actions** tab
 2. Review error messages and suggested fixes
-3. Check [WORKFLOWS-SETUP.md](.github/WORKFLOWS-SETUP.md) troubleshooting section
+3. Check [WORKFLOWS-SETUP.md](../WORKFLOWS-SETUP.md) troubleshooting section
 4. Verify all secrets and environment variables are configured
 5. Test locally with `terraform plan` or `dotnet test` before pushing
 

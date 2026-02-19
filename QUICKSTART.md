@@ -583,14 +583,14 @@ terraform state rm azurerm_resource_group.main
 ```bash
 cd infrastructure/terraform
 
-# Create workspace for staging
-terraform workspace new staging
+# Create workspace for QA
+terraform workspace new qa
 
 # Switch to workspace
-terraform workspace select staging
+terraform workspace select qa
 
 # Apply with different tfvars
-terraform apply -var-file="staging.tfvars"
+terraform apply -var-file="qa.tfvars"
 ```
 
 ## Next Steps

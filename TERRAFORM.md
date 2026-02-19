@@ -59,6 +59,8 @@ environment             = "dev"
 project_name            = "azlz"
 acr_sku                 = "Premium"
 apim_sku                = "StandardV2"
+foundry_project_name    = "main-project"
+enable_foundry_private_endpoint = true
 ssh_public_key          = "ssh-rsa AAAA..."
 enable_acr_private_endpoint  = true
 enable_apim_private_endpoint = true
@@ -170,11 +172,11 @@ terraform apply
 
 #### Method 4: Additional tfvars Files
 ```bash
-# For staging environment
-terraform apply -var-file="staging.tfvars"
+# For QA environment
+terraform apply -var-file="qa.tfvars"
 
 # For production environment
-terraform apply -var-file="production.tfvars"
+terraform apply -var-file="prod.tfvars"
 ```
 
 ### Environment-Specific Files
@@ -193,7 +195,7 @@ enable_acr_private_endpoint  = false  # Save costs in dev
 enable_apim_private_endpoint = false
 ```
 
-**production.tfvars**
+**prod.tfvars**
 ```hcl
 environment     = "prod"
 location        = "eastus"
@@ -210,7 +212,7 @@ Deploy to different environments:
 ```bash
 terraform apply -var-file="dev.tfvars"
 # or
-terraform apply -var-file="production.tfvars"
+terraform apply -var-file="prod.tfvars"
 ```
 
 ### GitHub Actions Self-Hosted Runner Configuration

@@ -65,6 +65,12 @@ variable "cicd_subnet_address_space" {
   default     = "10.0.6.0/24"
 }
 
+variable "foundry_subnet_address_space" {
+  description = "CIDR block for Microsoft Foundry private endpoint subnet"
+  type        = string
+  default     = "10.0.7.0/24"
+}
+
 # CI/CD Runner Configuration
 variable "enable_cicd_runner" {
   description = "Enable self-hosted CI/CD runner using Container Apps Jobs"
@@ -157,6 +163,30 @@ variable "enable_aca_private_endpoint" {
   description = "Enable private endpoint for Container Apps environment"
   type        = bool
   default     = true
+}
+
+variable "enable_foundry_private_endpoint" {
+  description = "Enable private endpoint for Microsoft Foundry resource"
+  type        = bool
+  default     = true
+}
+
+variable "foundry_sku" {
+  description = "SKU for Microsoft Foundry resource"
+  type        = string
+  default     = "S0"
+}
+
+variable "foundry_project_name" {
+  description = "Name for the Microsoft Foundry project"
+  type        = string
+  default     = "main-project"
+}
+
+variable "foundry_project_description" {
+  description = "Description for the Microsoft Foundry project"
+  type        = string
+  default     = "Microsoft Foundry project for private networking scenarios"
 }
 
 variable "enable_container_app_external" {

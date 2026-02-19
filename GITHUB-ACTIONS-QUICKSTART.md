@@ -1,6 +1,6 @@
 # GitHub Actions Workflows - Quick Start
 
-> **⚠️ Prerequisites**: Before starting, ensure you meet all requirements in [PREREQUISITES.md](../PREREQUISITES.md). This includes Azure CLI, Terraform, Git, and appropriate Azure/GitHub permissions.
+> **⚠️ Prerequisites**: Before starting, ensure you meet all requirements in [PREREQUISITES.md](./PREREQUISITES.md). This includes Azure CLI, Terraform, Git, and appropriate Azure/GitHub permissions.
 
 ## What Was Created
 

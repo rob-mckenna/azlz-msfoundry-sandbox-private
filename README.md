@@ -75,6 +75,7 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
   - **Jumpbox Subnet** (10.0.3.0/24): Secure administrative access VM
   - **Bastion Subnet** (10.0.4.0/24): Azure Bastion for remote access
   - **APIM Subnet** (10.0.5.0/24): API Management with internal VNet integration
+  - **Foundry Subnet** (10.0.7.0/24): Microsoft Foundry private endpoint
 
 ### 2. **Azure Container Registry (ACR)**
 - **SKU**: Premium (required for private endpoints)
@@ -131,16 +132,24 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 - **Features**: Browser-based console access
 - **Network Security**: Properly configured NSGs
 
-### 7. **GitHub Actions CI/CD Automation** (Recommended)
+### 7. **Microsoft Foundry**
+- **Resource Type**: AI Services account (`AIServices`) with project management enabled
+- **Project**: Dedicated Foundry project resource for workload isolation
+- **Network**: Public network access disabled when private endpoint is enabled
+- **Private Endpoint**: Uses `account` subresource in dedicated Foundry subnet
+- **Private DNS**: `privatelink.cognitiveservices.azure.com`, `privatelink.openai.azure.com`, `privatelink.services.ai.azure.com`
+- **Access Pattern**: Use existing Bastion + jumpbox for private-network access (no ExpressRoute/VPN gateway required)
+
+### 8. **GitHub Actions CI/CD Automation** (Recommended)
 - **Workflows**: Automated build, test, and deploy pipelines
 - **Multi-Environment**: Separate workflows for DEV, QA, and PROD
 - **Auto-Deployment**: Push code → Automatically deploy to matching environment
 - **Infrastructure as Code**: Terraform deployments via GitHub Actions
 - **PROD Protection**: Manual approval required before production deployment
 - **Setup Guide**: See [GITHUB-ACTIONS-QUICKSTART.md](GITHUB-ACTIONS-QUICKSTART.md)
-- **Documentation**: Full details in [.github/workflows/](./github/workflows/)
+- **Documentation**: Full details in [.github/workflows/](./.github/workflows/)
 
-### 8. **GitHub Actions Self-Hosted Runner** (Optional)
+### 9. **GitHub Actions Self-Hosted Runner** (Optional)
 - **Deployment**: Container Apps Job in dedicated CI/CD environment
 - **Subnet**: CI/CD Subnet (10.0.6.0/24) - isolated for CI/CD workloads
 - **Features**:
@@ -153,14 +162,15 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 - **Configuration**: Set `enable_cicd_runner = true` and provide GitHub registration token
 - **Setup Guide**: See [CI-CD-RUNNER.md](CI-CD-RUNNER.md)
 
-### 9. **Monitoring & Logging**
+### 10. **Monitoring & Logging**
 - **Log Analytics Workspace**: 30-day retention
 - **Integration**: ACA environment logs automatically streamed
 - **Diagnostics**: Application and platform metrics
 
-### 10. **Private Endpoints & DNS**
+### 11. **Private Endpoints & DNS**
 - **ACR Private Endpoint**: In ACR subnet with private DNS (privatelink.azurecr.io)
 - **APIM Private Endpoint**: In APIM subnet with private DNS (azure-api.net)
+- **Foundry Private Endpoint**: In Foundry subnet with private DNS for AI services/OpenAI/services.ai
 - **Container Apps**: Internal load balancer with environment-specific DNS
 - **DNS Resolution**: All private DNS zones linked to VNet
 

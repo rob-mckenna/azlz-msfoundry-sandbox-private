@@ -129,12 +129,13 @@ Contains all resource definitions:
 - **Resource Group**: Foundation container
 - **Networking**: VNet, subnets, NSGs with security rules
 - **Container Registry**: ACR with Premium SKU and private endpoints
+- **Microsoft Foundry**: Foundry account + Foundry project with private endpoint
 - **API Management**: APIM with internal VNet integration
 - **Logging**: Log Analytics workspace
 - **Identity**: User-assigned managed identity for ACA
 - **Container Apps**: Environment and Container App with health checks
 - **VM & Bastion**: Jumpbox and Bastion for secure access
-- **Private Endpoints**: ACR, APIM, and Container Apps DNS zones
+- **Private Endpoints**: ACR, APIM, Foundry, and Container Apps DNS zones
 
 ### `variables.tf`
 Input variables with defaults:

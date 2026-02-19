@@ -95,8 +95,8 @@ Private DNS Zones:
 - Container App DNS A records point to internal load balancer
 
 **Access Pattern**:
-- All PaaS services (ACR, APIM, Container Apps) are private-only by default
-- External access requires VPN, ExpressRoute, or access via jumpbox through Bastion
+- All PaaS services (ACR, APIM, Container Apps, Foundry) are private-only by default
+- This repository uses Bastion + jumpbox for private access; VPN/ExpressRoute are optional patterns but are not provisioned here
 - For development/testing, external access can be enabled via terraform variables
 ```
 

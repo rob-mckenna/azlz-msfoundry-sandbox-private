@@ -43,9 +43,10 @@ local.settings.json
 .terraform/
 *.tfstate
 *.tfstate.*
-terraform.tfvars      # Block local environment config (DO NOT COMMIT)
-local.tfvars          # Block local overrides (DO NOT COMMIT)
-*.auto.tfvars         # Block auto-loaded local configs (DO NOT COMMIT)
+# Block local Terraform configs (DO NOT COMMIT)
+terraform.tfvars
+local.tfvars
+*.auto.tfvars
 # NOTE: dev.tfvars, qa.tfvars, prod.tfvars are committed as templates
 # They contain ONLY placeholders - actual secrets come from GitHub Secrets
 .terraform.lock.hcl

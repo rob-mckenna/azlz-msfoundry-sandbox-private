@@ -1,6 +1,6 @@
 # Terraform Deployment Checklist
 
-**Note**: For automated deployment using GitHub Actions, see [GITHUB-ACTIONS-QUICKSTART.md](../GITHUB-ACTIONS-QUICKSTART.md) instead.
+**Note**: For automated deployment using GitHub Actions, see [GITHUB-ACTIONS-QUICKSTART.md](./GITHUB-ACTIONS-QUICKSTART.md) instead.
 
 This checklist is for manual Terraform deployments.
 
@@ -359,11 +359,11 @@ terraform output windows_jumpbox_admin_password
 
 ## Documentation References
 
-- [ ] Read [README.md](../README.md) for architecture overview
-- [ ] Read [QUICKSTART.md](../QUICKSTART.md) for quick reference
-- [ ] Read [TERRAFORM.md](../TERRAFORM.md) for advanced Terraform topics
-- [ ] Read [ARCHITECTURE.md](../ARCHITECTURE.md) for design decisions
-- [ ] Read [POST-DEPLOYMENT-ACCESS.md](../POST-DEPLOYMENT-ACCESS.md) for accessing VMs and retrieving credentials
+- [ ] Read [README.md](./README.md) for architecture overview
+- [ ] Read [QUICKSTART.md](./QUICKSTART.md) for quick reference
+- [ ] Read [TERRAFORM.md](./TERRAFORM.md) for advanced Terraform topics
+- [ ] Read [ARCHITECTURE.md](./ARCHITECTURE.md) for design decisions
+- [ ] Read [POST-DEPLOYMENT-ACCESS.md](./POST-DEPLOYMENT-ACCESS.md) for accessing VMs and retrieving credentials
 
 ## Notes
 

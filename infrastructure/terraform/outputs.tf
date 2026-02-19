@@ -254,6 +254,55 @@ output "apim_subnet_id" {
   description = "The ID of the APIM subnet"
   value       = azurerm_subnet.apim.id
 }
+
+output "foundry_resource_id" {
+  description = "The ID of the Microsoft Foundry resource"
+  value       = azapi_resource.foundry_account.id
+}
+
+output "foundry_resource_name" {
+  description = "The name of the Microsoft Foundry resource"
+  value       = azapi_resource.foundry_account.name
+}
+
+output "foundry_project_id" {
+  description = "The ID of the Microsoft Foundry project"
+  value       = azapi_resource.foundry_project.id
+}
+
+output "foundry_project_name" {
+  description = "The name of the Microsoft Foundry project"
+  value       = azapi_resource.foundry_project.name
+}
+
+output "foundry_subnet_id" {
+  description = "The ID of the Microsoft Foundry private endpoint subnet"
+  value       = azurerm_subnet.foundry.id
+}
+
+output "foundry_private_endpoint_id" {
+  description = "The ID of the Microsoft Foundry private endpoint"
+  value       = var.enable_foundry_private_endpoint ? azurerm_private_endpoint.foundry[0].id : null
+}
+
+output "foundry_private_dns_zone_ids" {
+  description = "The IDs of Microsoft Foundry private DNS zones"
+  value = var.enable_foundry_private_endpoint ? [
+    azurerm_private_dns_zone.foundry_cognitiveservices[0].id,
+    azurerm_private_dns_zone.foundry_openai[0].id,
+    azurerm_private_dns_zone.foundry_services_ai[0].id
+  ] : []
+}
+
+output "foundry_private_dns_zone_names" {
+  description = "The names of Microsoft Foundry private DNS zones"
+  value = var.enable_foundry_private_endpoint ? [
+    azurerm_private_dns_zone.foundry_cognitiveservices[0].name,
+    azurerm_private_dns_zone.foundry_openai[0].name,
+    azurerm_private_dns_zone.foundry_services_ai[0].name
+  ] : []
+}
+
 output "cicd_subnet_id" {
   description = "The ID of the CI/CD subnet"
   value       = var.enable_cicd_runner ? azurerm_subnet.cicd[0].id : null

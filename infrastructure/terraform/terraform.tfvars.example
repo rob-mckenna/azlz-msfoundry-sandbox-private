@@ -18,6 +18,7 @@ jumpbox_subnet_address_space = "10.0.3.0/24"
 bastion_subnet_address_space = "10.0.4.0/24"
 apim_subnet_address_space    = "10.0.5.0/24"
 cicd_subnet_address_space    = "10.0.6.0/24"
+foundry_subnet_address_space = "10.0.7.0/24"
 
 # ACR Configuration
 acr_sku                     = "Premium"
@@ -36,6 +37,10 @@ apim_capacity                = 1
 enable_apim_private_endpoint = true
 enable_aca_private_endpoint  = true
 enable_container_app_external = false
+enable_foundry_private_endpoint = true
+foundry_sku                     = "S0"
+foundry_project_name            = "main-project"
+foundry_project_description     = "Microsoft Foundry project for private networking scenarios"
 
 # CI/CD Runner Configuration (GitHub Actions self-hosted)
 enable_cicd_runner             = false  # Set to true to enable GitHub Actions runner
