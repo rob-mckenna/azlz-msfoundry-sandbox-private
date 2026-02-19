@@ -735,27 +735,26 @@ resource "azurerm_application_insights" "main" {
 # API MANAGEMENT
 # =====================
 
-resource "azurerm_api_management" "main" {
-  name                = local.apim_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  publisher_name      = var.apim_publisher_name
-  publisher_email     = var.apim_publisher_email
-  sku_name            = "${var.apim_sku}_${var.apim_capacity}"
+resource "azapi_resource" "apim" {
+  type                      = "Microsoft.ApiManagement/service@2024-05-01"
+  name                      = local.apim_name
+  parent_id                 = azurerm_resource_group.main.id
+  location                  = azurerm_resource_group.main.location
+  schema_validation_enabled = false
 
-  public_network_access_enabled = var.enable_apim_private_endpoint ? false : true
-
-  virtual_network_type = var.enable_apim_private_endpoint ? "Internal" : "None"
-
-  dynamic "virtual_network_configuration" {
-    for_each = var.enable_apim_private_endpoint ? [1] : []
-    content {
-      subnet_id = azurerm_subnet.apim.id
+  body = {
+    sku = {
+      name     = var.apim_sku
+      capacity = var.apim_capacity
     }
-  }
-
-  identity {
-    type = "SystemAssigned"
+    identity = {
+      type = "SystemAssigned"
+    }
+    properties = {
+      publisherName       = var.apim_publisher_name
+      publisherEmail      = var.apim_publisher_email
+      publicNetworkAccess = var.enable_apim_private_endpoint ? "Disabled" : "Enabled"
+    }
   }
 
   tags = local.common_tags
@@ -773,7 +772,7 @@ resource "azurerm_api_management_logger" "app_insights" {
   count = var.enable_apim_logging && var.enable_application_insights ? 1 : 0
 
   name                = "${local.apim_name}-logger"
-  api_management_name = azurerm_api_management.main.name
+  api_management_name = azapi_resource.apim.name
   resource_group_name = azurerm_resource_group.main.name
   resource_id         = azurerm_application_insights.main[0].id
 
@@ -795,7 +794,7 @@ resource "azurerm_api_management_diagnostic" "app_insights" {
 
   identifier               = "applicationinsights"
   resource_group_name      = azurerm_resource_group.main.name
-  api_management_name      = azurerm_api_management.main.name
+  api_management_name      = azapi_resource.apim.name
   api_management_logger_id = azurerm_api_management_logger.app_insights[0].id
 
   sampling_percentage       = 100
@@ -864,7 +863,7 @@ resource "azurerm_private_endpoint" "apim" {
   private_service_connection {
     name                           = "${local.apim_name}-psc"
     is_manual_connection           = false
-    private_connection_resource_id = azurerm_api_management.main.id
+    private_connection_resource_id = azapi_resource.apim.id
     subresource_names              = ["Gateway"]
   }
 
@@ -877,7 +876,7 @@ resource "azurerm_private_endpoint" "apim" {
 
   depends_on = [
     azurerm_private_dns_zone.apim,
-    azurerm_api_management.main
+    azapi_resource.apim
   ]
 }
 

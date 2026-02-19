@@ -182,22 +182,22 @@ output "acr_private_dns_zone_name" {
 
 output "apim_id" {
   description = "The ID of the API Management service"
-  value       = azurerm_api_management.main.id
+  value       = azapi_resource.apim.id
 }
 
 output "apim_name" {
   description = "The name of the API Management service"
-  value       = azurerm_api_management.main.name
+  value       = azapi_resource.apim.name
 }
 
 output "apim_gateway_url" {
   description = "The gateway URL of the API Management service"
-  value       = azurerm_api_management.main.gateway_url
+  value       = "https://${azapi_resource.apim.name}.azure-api.net"
 }
 
 output "apim_portal_url" {
   description = "The developer portal URL of the API Management service"
-  value       = azurerm_api_management.main.developer_portal_url
+  value       = "https://${azapi_resource.apim.name}.developer.azure-api.net"
 }
 
 output "apim_private_endpoint_id" {

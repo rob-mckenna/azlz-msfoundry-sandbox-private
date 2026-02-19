@@ -118,9 +118,14 @@ variable "enable_acr_private_endpoint" {
 
 # API Management Configuration
 variable "apim_sku" {
-  description = "SKU for API Management (StandardV2, PremiumV2)"
+  description = "SKU tier for API Management (Consumption, Developer, Basic, Standard, Premium, Isolated, BasicV2, StandardV2, PremiumV2)"
   type        = string
   default     = "StandardV2"
+
+  validation {
+    condition     = contains(["Consumption", "Developer", "Basic", "Standard", "Premium", "Isolated", "BasicV2", "StandardV2", "PremiumV2"], var.apim_sku)
+    error_message = "apim_sku must be one of: Consumption, Developer, Basic, Standard, Premium, Isolated, BasicV2, StandardV2, PremiumV2."
+  }
 }
 
 variable "apim_capacity" {
