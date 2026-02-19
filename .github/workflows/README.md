@@ -231,7 +231,7 @@ All sensitive data is stored as GitHub Secrets, not in code:
 - Azure credentials (service principals)
 - ACR login credentials
 - Terraform state backend credentials
-- SSH keys (indirectly)
+- Windows jumpbox admin password (if jumpbox is deployed)
 
 ### Accessing Secrets in Workflows
 

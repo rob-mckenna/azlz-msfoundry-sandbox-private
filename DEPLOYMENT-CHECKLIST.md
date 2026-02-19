@@ -24,16 +24,10 @@ This checklist is for manual Terraform deployments.
   # Should be recent version
   ```
 
-- [ ] **SSH Key Pair Generated**
+- [ ] **Windows Admin Password Prepared**
   ```bash
-  ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
-  cat ~/.ssh/azlz-jumpbox.pub  # Copy for next step
-  ```
-
-- [ ] **SSH Public Key Added to terraform.tfvars**
-  ```bash
-  # Edit: infrastructure/terraform/terraform.tfvars
-  # Replace: ssh_public_key = "ssh-rsa AAAA..."
+  # Set securely via environment variable (recommended)
+  export TF_VAR_windows_admin_password="YourStrongP@ssw0rd2026!"
   ```
 
 - [ ] **Docker Installed** (for container image build)
@@ -45,7 +39,7 @@ This checklist is for manual Terraform deployments.
   - [ ] Check `infrastructure/terraform/terraform.tfvars`
   - [ ] Verify location (eastus, westus, etc.)
   - [ ] Verify environment name (dev, staging, prod)
-  - [ ] Verify resource sizing (vm_size, acr_sku, replicas)
+  - [ ] Verify resource sizing (windows_vm_size, acr_sku, replicas)
 
 ## Terraform Deployment Steps
 
@@ -241,26 +235,11 @@ This checklist is for manual Terraform deployments.
   az network bastion show --name azlz-bastion --resource-group $RESOURCE_GROUP
   ```
 
-- [ ] Get Linux jumpbox details
-  ```bash
-  JUMPBOX_LINUX_IP=$(terraform -C infrastructure/terraform output -raw jumpbox_private_ip)
-  echo "Linux Jumpbox Private IP: $JUMPBOX_LINUX_IP"
-  ```
-
 - [ ] Get Windows jumpbox details
   ```bash
   JUMPBOX_WINDOWS_IP=$(terraform -C infrastructure/terraform output -raw jumpbox_windows_private_ip)
   echo "Windows Jumpbox Private IP: $JUMPBOX_WINDOWS_IP"
   ```
-
-- [ ] Test Bastion connection to Linux jumpbox (via Azure Portal)
-  - [ ] Go to Azure Portal
-  - [ ] Navigate to Bastion resource
-  - [ ] Click "Connect"
-  - [ ] Select Linux jumpbox VM (azlz-jumpbox-vm)
-  - [ ] Choose SSH
-  - [ ] Enter username: `azureuser`
-  - [ ] Should establish connection
 
 - [ ] Test Bastion connection to Windows jumpbox (via Azure Portal)
   - [ ] Go to Azure Portal
@@ -317,7 +296,7 @@ terraform output windows_jumpbox_admin_password
 
 - [ ] **Terraform plan fails**
   - Run: `terraform validate`
-  - Check SSH public key format in tfvars
+  - Check Windows admin password is provided securely
   - Check all variable values are valid
 
 - [ ] **Container App won't start**
@@ -333,7 +312,7 @@ terraform output windows_jumpbox_admin_password
 
 - [ ] **Bastion connection fails**
   - Verify Bastion is deployed and active
-  - Check NSG rules allow Bastion → Jumpbox on port 22
+  - Check NSG rules allow Bastion → Jumpbox on port 3389
   - Verify jumpbox VM is in "Running" state
 
 ## Clean Up (if needed)

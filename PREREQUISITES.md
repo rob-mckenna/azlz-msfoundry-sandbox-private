@@ -134,16 +134,9 @@ git --version
   - Mac: `brew install git`
   - Linux: `sudo apt install git` (Ubuntu/Debian)
 
-#### SSH Key Generation (Built-in)
-```bash
-# Test SSH key generation (should exist on all platforms)
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/test-key -N ""
+#### Secure Secret Handling
 
-# Verify: ls -la ~/.ssh/test-key*
-# Then delete test keys: rm ~/.ssh/test-key*
-```
-
-- [ ] **SSH key generator** available (built-in on all platforms)
+- [ ] You can provide `TF_VAR_windows_admin_password` securely in your shell/CI environment
 
 ### Recommended Tools (Optional)
 
@@ -256,8 +249,8 @@ az network public-ip list-usage --location eastus --output table
 ```
 
 **Required Quotas:**
-- [ ] **vCPU quota**: ≥ 4 (for 2 jumpbox VMs: 2x D4s_v5 = 4 vCPUs)
-- [ ] **Public IPs**: ≥ 4 (jumpbox Linux, jumpbox Windows, Bastion, optional)
+- [ ] **vCPU quota**: ≥ 4 (for Windows jumpbox VM: D4s_v5)
+- [ ] **Public IPs**: ≥ 2 (jumpbox Windows + Bastion)
 - [ ] **Virtual Networks**: ≥ 1
 - [ ] **Storage Accounts**: ≥ 1 (for Terraform state)
 
@@ -275,7 +268,6 @@ az network public-ip list-usage --location eastus --output table
 
 ## 8. Security & Compliance Checklist
 
-- [ ] Understand that **SSH private keys** will never be committed to Git
 - [ ] Understand that **GitHub Secrets** are used for sensitive data
 - [ ] Understand that **Terraform state** will be stored in Azure Storage
 - [ ] Understand that **service principals** will have Contributor permissions to subscription
@@ -285,16 +277,7 @@ az network public-ip list-usage --location eastus --output table
 
 ### Jumpbox VM Credentials
 
-Both Linux and Windows jumpbox VMs will be provisioned with credentials:
-
-#### Linux Jumpbox
-- [ ] **SSH key pair** prepared locally
-  ```bash
-  ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
-  ```
-- [ ] SSH public key stored in **GitHub Secret**: `SSH_PUBLIC_KEY`
-- [ ] SSH private key kept secure (never committed or shared)
-- [ ] Username: `azureuser` (from `admin_username` variable)
+Windows jumpbox VM will be provisioned with credentials:
 
 #### Windows Jumpbox
 - [ ] **Strong password prepared** for Windows admin user
@@ -321,10 +304,10 @@ Both Linux and Windows jumpbox VMs will be provisioned with credentials:
 
 ### Access Method: Azure Bastion
 
-- [ ] Understand **no direct SSH/RDP access** to jumpbox VMs
+- [ ] Understand **no direct RDP access** to jumpbox VM
 - [ ] All access goes through **Azure Bastion** service
 - [ ] Bastion provides secure, browser-based remote access
-- [ ] Credentials (SSH key or password) used only within Bastion tunnel
+- [ ] Credentials (password) used only within Bastion tunnel
 
 ---
 
@@ -361,14 +344,12 @@ terraform --version > /dev/null 2>&1 && echo "   ✓ Terraform installed" || ech
 echo "3. Checking Git..."
 git --version > /dev/null 2>&1 && echo "   ✓ Git installed" || echo "   ✗ Git not found"
 
-# 4. SSH key generation
-echo "4. Checking SSH key generation..."
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/test-prereq -N "" > /dev/null 2>&1
-if [ -f ~/.ssh/test-prereq ]; then
-    rm ~/.ssh/test-prereq ~/.ssh/test-prereq.pub
-    echo "   ✓ SSH key generation works"
+# 4. Environment variable support
+echo "4. Checking environment variable support..."
+if [ -n "$SHELL" ]; then
+  echo "   ✓ Shell is available for TF_VAR usage"
 else
-    echo "   ✗ SSH key generation failed"
+  echo "   ✗ Shell environment not detected"
 fi
 
 # 5. Azure authentication

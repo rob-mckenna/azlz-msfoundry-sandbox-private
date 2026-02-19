@@ -63,26 +63,6 @@ output "container_app_url" {
   value       = "https://${azurerm_container_app.main.ingress[0].fqdn}"
 }
 
-output "jumpbox_vm_id" {
-  description = "The ID of the jumpbox VM"
-  value       = azurerm_linux_virtual_machine.jumpbox.id
-}
-
-output "jumpbox_vm_name" {
-  description = "The name of the jumpbox VM"
-  value       = azurerm_linux_virtual_machine.jumpbox.name
-}
-
-output "jumpbox_private_ip" {
-  description = "The private IP address of the jumpbox VM"
-  value       = azurerm_network_interface.jumpbox.private_ip_address
-}
-
-output "jumpbox_public_ip" {
-  description = "The public IP address of the jumpbox VM (for reference only, use Bastion for access)"
-  value       = azurerm_public_ip.jumpbox.ip_address
-}
-
 output "jumpbox_windows_vm_id" {
   description = "The ID of the Windows jumpbox VM"
   value       = azurerm_windows_virtual_machine.jumpbox.id

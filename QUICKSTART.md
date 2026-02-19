@@ -41,20 +41,9 @@ $env:LOCATION = "eastus"
 
 ### Step 3: Configure Terraform Variables
 
-**Required: Generate or Get Your SSH Public Key**
+**Required: Prepare Windows Jumpbox Password**
 
-If you don't already have an SSH key pair, generate one:
-```bash
-# Generate a new SSH key pair (one time)
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
-
-# This creates two files:
-#   ~/.ssh/azlz-jumpbox          (private key - keep secret)
-#   ~/.ssh/azlz-jumpbox.pub      (public key - paste into terraform.tfvars)
-
-# Display your public key (copy the entire output)
-cat ~/.ssh/azlz-jumpbox.pub
-```
+Set a strong password for the Windows jumpbox admin user (`windows_admin_password`).
 
 **Required: Edit terraform.tfvars**
 
@@ -67,15 +56,10 @@ cat ~/.ssh/azlz-jumpbox.pub
    code infrastructure/terraform/terraform.tfvars
    ```
 
-2. Find this line (around line 43):
-   ```hcl
-   ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDR3b7fZ5N7VvN8..."
-   ```
-
-3. Replace the placeholder with your public key (from `cat ~/.ssh/azlz-jumpbox.pub`):
-   ```hcl
-   ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABGQ..." # Your actual key here
-   ```
+2. Set this value (or provide it via environment variable):
+  ```hcl
+  windows_admin_password = "YourStrongP@ssw0rd2026!"
+  ```
 
 **Optional: Adjust Other Settings**
 
@@ -123,7 +107,7 @@ terraform apply \
 ```hcl
 location    = "eastus2"
 environment = "dev"
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDxN4b7k2..."
+windows_vm_size = "Standard_D4s_v5"
 # Note: apim_publisher_name and apim_publisher_email set via env vars above
 ```
 
@@ -133,12 +117,12 @@ ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDxN4b7k2..."
 
 **⚠️ Security: Don't commit terraform.tfvars to git**
 
-The `terraform.tfvars` file contains your SSH public key and should NEVER be committed to source control. The `.gitignore` will automatically exclude it. You have three options:
+The `terraform.tfvars` file can contain secrets (for example `windows_admin_password`) and should NEVER be committed to source control. The `.gitignore` will automatically exclude it. You have three options:
 
 **Option 1: Use Environment Variables** (Recommended for CI/CD)
 ```bash
 # Instead of editing terraform.tfvars, set environment variable:
-export TF_VAR_ssh_public_key="$(cat ~/.ssh/azlz-jumpbox.pub)"
+export TF_VAR_windows_admin_password="YourStrongP@ssw0rd2026!"
 
 # Then terraform will use the environment variable automatically
 cd infrastructure/terraform
@@ -150,7 +134,7 @@ terraform apply
 # Create a local copy that won't be committed
 cp infrastructure/terraform/terraform.tfvars infrastructure/terraform/local.tfvars
 
-# Edit local.tfvars with your SSH key
+# Edit local.tfvars with your Windows admin password
 nano infrastructure/terraform/local.tfvars
 
 # Use it when running terraform
@@ -164,12 +148,12 @@ terraform apply -var-file=local.tfvars
 ```bash
 # 1. Create template file (commit to git)
 cp infrastructure/terraform/terraform.tfvars infrastructure/terraform/terraform.tfvars.example
-# Remove SSH key from example: ssh_public_key = "ssh-rsa REPLACE_WITH_YOUR_KEY"
+# Ensure secrets are placeholders in the example file
 
 # 2. Create local copy (don't commit)
 cp infrastructure/terraform/terraform.tfvars.example infrastructure/terraform/terraform.tfvars
 
-# 3. Edit terraform.tfvars locally with your SSH key
+# 3. Edit terraform.tfvars locally with your secret values
 # terraform.tfvars is in .gitignore and won't be committed
 ```
 
@@ -184,7 +168,7 @@ terraform init
 # Validate configuration
 terraform validate
 
-# If you used environment variables for SSH key and APIM settings:
+# If you used environment variables for Windows password and APIM settings:
 # Just run terraform plan - it will use the environment variables
 
 # If you created local.tfvars with your settings:
@@ -234,7 +218,7 @@ terraform apply
 
 **Approach C: Build & Push from Jumpbox** (Inside VNet)
 ```bash
-# SSH to jumpbox via Azure Bastion, then build/push there
+# Connect to Windows jumpbox via Azure Bastion (RDP), then build/push there
 ```
 
 ---
@@ -277,7 +261,7 @@ echo "✓ Image pushed to: ${ACR_NAME}.azurecr.io/azlz-app:latest"
 By default, the Container App is configured with **internal-only access** (not accessible from the internet). To test it, you have two options:
 
 **Option A: Access via Jumpbox (Recommended for production-like setup)**
-1. SSH to the jumpbox via Azure Bastion (see "Accessing the Jumpbox via Bastion" section below)
+1. Connect to the Windows jumpbox via Azure Bastion (RDP) (see "Accessing the Jumpbox via Bastion" section below)
 2. From the jumpbox, test the application:
 
 ```bash
@@ -311,7 +295,7 @@ curl https://${CONTAINER_APP_URL}/
 ### Via Azure Portal
 1. Navigate to your Bastion resource in the Azure Portal
 2. Click "Bastion" → select the Jumpbox VM
-3. Choose "SSH" connection method
+3. Choose "RDP" connection method
 4. Use username: `azureuser`
 
 ### Via Terraform Outputs
@@ -319,33 +303,17 @@ curl https://${CONTAINER_APP_URL}/
 # Get jumpbox details
 terraform output -json
 
-# Get jumpbox private IP
-terraform output jumpbox_private_ip
+# Get Windows jumpbox private IP
+terraform output jumpbox_windows_private_ip
 ```
 
-## Key Management (SSH Keys for Jumpbox)
+## Credential Management (Windows Jumpbox)
 
-### Generate SSH Key Pair
+Set the Windows jumpbox password securely and avoid committing secrets:
+
 ```bash
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
+export TF_VAR_windows_admin_password="YourStrongP@ssw0rd2026!"
 ```
-
-### Update Terraform Variables with Your Public Key
-1. Get your public key:
-   ```bash
-   cat ~/.ssh/azlz-jumpbox.pub
-   ```
-
-2. Update `infrastructure/terraform/terraform.tfvars`:
-   ```hcl
-   ssh_public_key = "<YOUR-PUBLIC-KEY-HERE>"
-   ```
-
-3. Redeploy:
-   ```bash
-   cd infrastructure/terraform
-   terraform apply
-   ```
 
 ## Application Testing
 

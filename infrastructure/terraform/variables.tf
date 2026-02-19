@@ -195,48 +195,10 @@ variable "enable_container_app_external" {
   default     = false
 }
 
-# VM Configuration
-variable "vm_size" {
-  description = "VM size for jumpbox"
-  type        = string
-  default     = "Standard_B2s"
-}
-
 variable "admin_username" {
   description = "Admin username for jumpbox VM"
   type        = string
   default     = "azureuser"
-}
-
-variable "vm_image_publisher" {
-  description = "VM image publisher"
-  type        = string
-  default     = "Canonical"
-}
-
-variable "vm_image_offer" {
-  description = "VM image offer"
-  type        = string
-  default     = "0001-com-ubuntu-server-jammy"
-}
-
-variable "vm_image_sku" {
-  description = "VM image SKU"
-  type        = string
-  default     = "22_04-lts-gen2"
-}
-
-variable "vm_image_version" {
-  description = "VM image version"
-  type        = string
-  default     = "latest"
-}
-
-variable "ssh_public_key" {
-  description = "SSH public key for jumpbox (base64 encoded)"
-  type        = string
-  default     = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDR3b7fZ5N7VvN8..." # Replace with your key
-  sensitive   = true
 }
 
 # Windows VM Configuration

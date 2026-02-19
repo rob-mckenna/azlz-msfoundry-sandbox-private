@@ -42,7 +42,7 @@ Declares all input variables with:
 - Default values (can be overridden)
 - Type constraints (string, number, bool, object, etc.)
 - Descriptions for clarity
-- Sensitive flag for SSH keys
+- Sensitive flag for secrets such as Windows admin password
 
 ### outputs.tf
 Exports important values for use outside Terraform:
@@ -61,7 +61,7 @@ acr_sku                 = "Premium"
 apim_sku                = "StandardV2"
 foundry_project_name    = "main-project"
 enable_foundry_private_endpoint = true
-ssh_public_key          = "ssh-rsa AAAA..."
+windows_vm_size         = "Standard_D4s_v5"
 enable_acr_private_endpoint  = true
 enable_apim_private_endpoint = true
 enable_aca_private_endpoint  = true
@@ -160,7 +160,7 @@ terraform apply  # Uses terraform.tfvars automatically
 
 #### Method 2: CLI Arguments
 ```bash
-terraform apply -var="location=westus" -var="vm_size=Standard_B4ms"
+terraform apply -var="location=westus" -var="windows_vm_size=Standard_D4s_v5"
 ```
 
 #### Method 3: Environment Variables
@@ -187,7 +187,6 @@ Create separate tfvars for each environment:
 ```hcl
 environment     = "dev"
 location        = "eastus"
-vm_size         = "Standard_B2s"
 acr_sku         = "Standard"  # Cost optimization for dev
 apim_sku        = "Developer" # Cost optimization for dev
 max_replicas    = 3
@@ -199,7 +198,6 @@ enable_apim_private_endpoint = false
 ```hcl
 environment     = "prod"
 location        = "eastus"
-vm_size         = "Standard_D2s_v3"
 acr_sku         = "Premium"  # Required for private endpoints
 apim_sku        = "StandardV2"
 max_replicas    = 10
@@ -345,16 +343,8 @@ This ensures:
 
 ## Managing Secrets
 
-### SSH Public Key
-1. Generate locally:
-   ```bash
-   ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
-   ```
-
-2. Add to terraform.tfvars:
-   ```hcl
-   ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADA..."
-   ```
+### Windows Admin Password
+Set `windows_admin_password` using secure input methods (`TF_VAR_windows_admin_password`, local uncommitted tfvars, or CI secrets).
 
 ### Azure Credentials
 Terraform uses Azure CLI credentials:
@@ -373,14 +363,7 @@ secret {
 ```
 
 ### Future: Azure Key Vault Integration
-For production, store secrets in Key Vault:
-```hcl
-resource "azurerm_key_vault_secret" "ssh_key" {
-  name         = "jumpbox-ssh-key"
-  value        = var.ssh_public_key
-  key_vault_id = azurerm_key_vault.main.id
-}
-```
+For production, store secrets in Key Vault.
 
 ## Terraform Style and Best Practices
 
@@ -497,7 +480,7 @@ terraform apply -var="max_replicas=10"
 ### Example: Changing VM Size
 ```hcl
 # In terraform.tfvars
-vm_size = "Standard_D2s_v3"  # Change from B2s
+windows_vm_size = "Standard_D4s_v5"
 
 terraform apply
 ```

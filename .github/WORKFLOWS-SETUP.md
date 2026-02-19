@@ -32,7 +32,7 @@ Configure these secrets **per environment** (Settings → Secrets and variables 
 REGISTRY_URL              - Your ACR login server (e.g., myacr.azurecr.io)
 REGISTRY_USERNAME         - ACR admin user (or service principal)
 REGISTRY_PASSWORD         - ACR admin password (or service principal password)
-SSH_PUBLIC_KEY            - SSH public key for jumpbox VMs (from ~/.ssh/azlz-jumpbox.pub)
+WINDOWS_ADMIN_PASSWORD    - Windows jumpbox admin password (strong 12-123 chars)
 ```
 
 #### Environment-Specific Secrets
@@ -58,7 +58,6 @@ DEV_REGISTRY_NAME              = azlzacrdev
 DEV_TF_BACKEND_RG              = azlz-terraform-state
 DEV_TF_BACKEND_STORAGE         = azlztfstatedev
 DEV_TF_BACKEND_CONTAINER       = dev
-SSH_PUBLIC_KEY                 = (from ~/.ssh/azlz-jumpbox.pub)
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
 
@@ -70,7 +69,6 @@ QA_REGISTRY_NAME               = azlzacrqa
 QA_TF_BACKEND_RG               = azlz-terraform-state
 QA_TF_BACKEND_STORAGE          = azlztfstateqa
 QA_TF_BACKEND_CONTAINER        = qa
-SSH_PUBLIC_KEY                 = (from ~/.ssh/azlz-jumpbox.pub)
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
 
@@ -82,7 +80,6 @@ PROD_REGISTRY_NAME             = azlzacrprod
 PROD_TF_BACKEND_RG             = azlz-terraform-state
 PROD_TF_BACKEND_STORAGE        = azlztfstateprod
 PROD_TF_BACKEND_CONTAINER      = prod
-SSH_PUBLIC_KEY                 = (from ~/.ssh/azlz-jumpbox.pub)
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
 
@@ -298,7 +295,7 @@ Create environment-specific tfvars files:
 ```hcl
 environment = "dev"
 location    = "eastus"
-vm_size     = "Standard_B2s"
+windows_vm_size = "Standard_D4s_v5"
 max_replicas = 3
 ```
 
@@ -306,7 +303,7 @@ max_replicas = 3
 ```hcl
 environment = "qa"
 location    = "eastus"
-vm_size     = "Standard_B2s"
+windows_vm_size = "Standard_D4s_v5"
 max_replicas = 5
 ```
 
@@ -314,7 +311,7 @@ max_replicas = 5
 ```hcl
 environment = "prod"
 location    = "eastus"
-vm_size     = "Standard_D2s_v3"
+windows_vm_size = "Standard_D4s_v5"
 max_replicas = 10
 ```
 

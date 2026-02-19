@@ -9,7 +9,7 @@ A production-ready Azure Landing Zone built with **Terraform**, featuring:
 - ✅ Azure API Management (APIM) StandardV2 with private endpoints
 - ✅ Optional GitHub Actions self-hosted runner (Container Apps Job)
 - ✅ Pre-built .NET 8 Minimal API application
-- ✅ Linux Jumpbox VM for administration
+- ✅ Windows Jumpbox VM for administration
 - ✅ Azure Bastion for secure remote access
 - ✅ Log Analytics for monitoring and diagnostics
 - ✅ Managed Identity integration (no secrets in code)
@@ -73,9 +73,6 @@ docker --version
 
 # Check .NET SDK (optional)
 dotnet --version
-
-# SSH key pair
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
 ```
 
 ### 1. Quick Deploy (5 minutes)
@@ -84,7 +81,7 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
 cat QUICKSTART.md
 
 # Or see the 5-minute summary:
-# 1. Configure SSH public key in terraform/terraform.tfvars
+# 1. Configure Windows admin password in terraform/terraform.tfvars
 # 2. cd infrastructure/terraform && terraform init
 # 3. terraform apply
 # 4. Build & push container image
@@ -140,7 +137,7 @@ Contains all resource definitions:
 ### `variables.tf`
 Input variables with defaults:
 - Networking (address spaces, subnets)
-- Compute (VM size, image)
+- Compute (Windows VM size and image)
 - Application (container port, replicas)
 - Tags and metadata
 
@@ -151,14 +148,14 @@ location      = "eastus"
 environment   = "dev"
 acr_sku       = "Premium"
 apim_sku      = "StandardV2"
-ssh_public_key = "ssh-rsa AAAA..."  # Your public key
+windows_vm_size = "Standard_D4s_v5"
 ```
 
 ### `outputs.tf`
 Exports important values:
 - Resource IDs and names
 - Endpoints (Container App URL)
-- Connection info (jumpbox IP, Bastion details)
+- Connection info (Windows jumpbox IP, Bastion details)
 
 ### `versions.tf`
 Version requirements (referenced in provider.tf):
@@ -235,7 +232,7 @@ terraform {
 
 ✅ **Network**: Subnets isolated with NSGs  
 ✅ **Identity**: Managed identity for ACA (no credentials in code)  
-✅ **SSH**: Key-based auth on jumpbox (no passwords)  
+✅ **Jumpbox Auth**: Windows credentials managed through secure secrets  
 ✅ **Secrets**: .gitignore protects state files  
 ✅ **Encryption**: TLS in transit, platform encryption at rest  
 ✅ **Access**: Bastion for secure VM access (no public IP)  
@@ -295,10 +292,9 @@ terraform apply tfplan
 | API Management | StandardV2 (1 cap) | $744 |
 | ACA | Consumption (1 replica, 0.5 vCPU) | $19 |
 | Log Analytics | 30-day retention | $8 |
-| Jumpbox VM (Linux) | Standard_B2s | $36 |
 | Jumpbox VM (Windows) | Standard_D4s_v5 | $186 |
 | Azure Bastion | Basic (hourly) | $377 |
-| **Total Dev** | | **~$1,420** |
+| **Total Dev** | | **~$1,384** |
 
 ### Prod Environment (per month - East US2)
 
@@ -309,10 +305,9 @@ terraform apply tfplan
 | API Management | StandardV2 (1 cap) | $744 |
 | ACA | Consumption (5 replicas, 0.5 vCPU ea) | $97 |
 | Log Analytics | 30-day retention | $8 |
-| Jumpbox VM (Linux) | Standard_B2s | $36 |
 | Jumpbox VM (Windows) | Standard_D4s_v5 | $186 |
 | Azure Bastion | Basic (hourly) | $377 |
-| **Total Prod** | | **~$1,498** |
+| **Total Prod** | | **~$1,462** |
 
 ### Cost Optimization Tips
 

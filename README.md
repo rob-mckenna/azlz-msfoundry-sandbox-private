@@ -21,12 +21,12 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 │  │  │              │  │              │  │                │ │  │
 │  │  │ ┌──────────┐ │  │ ┌──────────┐ │  │ ┌────────────┐ │ │  │
 │  │  │ │Container │ │  │ │Container │ │  │ │  Jumpbox   │ │ │  │
-│  │  │ │Registry  │ │  │ │Apps Env  │ │  │ │  Linux VM  │ │ │  │
+│  │  │ │Registry  │ │  │ │Apps Env  │ │  │ │ Windows VM │ │ │  │
 │  │  │ │          │ │  │ │          │ │  │ └────────────┘ │ │  │
-│  │  │ │ Premium  │ │  │ │Container │ │  │ ┌────────────┐ │ │  │
-│  │  │ │   SKU    │ │  │ │App       │ │  │ │  Jumpbox   │ │ │  │
-│  │  │ │+ Private │ │  │ │+ Internal│ │  │ │ Windows VM │ │ │  │
-│  │  │ │ Endpoint │ │  │ │   LB     │ │  │ └────────────┘ │ │  │
+│  │  │ │ Premium  │ │  │ │Container │ │  │ │              │ │  │
+│  │  │ │   SKU    │ │  │ │App       │ │  │ │              │ │  │
+│  │  │ │+ Private │ │  │ │+ Internal│ │  │ │              │ │  │
+│  │  │ │ Endpoint │ │  │ │   LB     │ │  │ │              │ │  │
 │  │  │ └──────────┘ │  │ └──────────┘ │  │ Public IPs     │ │  │
 │  │  └──────────────┘  └──────────────┘  └────────────────┘ │  │
 │  │                                                         │  │
@@ -110,14 +110,7 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
   - System-assigned managed identity
   - Service endpoints for Storage, SQL, Key Vault
 
-### 5. **Jumpbox VMs**
-
-#### Linux Jumpbox
-- **Image**: Ubuntu 22.04 LTS
-- **Size**: Standard_B2s (configurable)
-- **Network**: Private IP via Bastion
-- **Security**: SSH key-based authentication
-- **Use**: Administrative and diagnostic access
+### 5. **Jumpbox VM**
 
 #### Windows Jumpbox
 - **Image**: Windows Server 2022 Datacenter (Azure Edition)
@@ -128,7 +121,7 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 
 ### 6. **Azure Bastion**
 - **SKU**: Basic
-- **Access**: Secure RDP/SSH to jumpbox without public IP exposure
+- **Access**: Secure RDP to jumpbox without public IP exposure
 - **Features**: Browser-based console access
 - **Network Security**: Properly configured NSGs
 
@@ -191,10 +184,10 @@ For manual control or learning purposes, follow the Prerequisites and Setup step
 - Terraform (version 1.5 or later)
 - Docker (for building container images)
 - .NET 8 SDK (for local development)
-- SSH key pair (for jumpbox access)
+- Windows admin password (for jumpbox access)
 - GitHub account (for automated deployments)
 
-**Security Note**: The default terraform.tfvars contains placeholder SSH keys. Replace with your actual SSH public key before deployment.
+**Security Note**: Provide a strong `windows_admin_password` via secure variables or local, uncommitted tfvars.
 
 ### Setup
 
@@ -206,8 +199,8 @@ For manual control or learning purposes, follow the Prerequisites and Setup step
 
 2. **Configure parameters** (optional)
    - Edit `infrastructure/terraform/terraform.tfvars`
-   - Adjust location, environment, sizing, or SSH public key as needed
-   - Replace the `ssh_public_key` value with your SSH public key
+  - Adjust location, environment, sizing, and Windows jumpbox settings as needed
+  - Set `windows_admin_password` securely (do not commit secrets)
 
 4. **Deploy infrastructure**
    ```bash
@@ -295,7 +288,7 @@ dotnet run
 
 **Option 1: Access via Jumpbox** (Recommended for secure environments)
 ```bash
-# SSH to jumpbox via Azure Bastion in Azure Portal, then:
+# Connect to Windows jumpbox via Azure Bastion (RDP), then:
 curl http://<container-app-fqdn>/
 curl http://<container-app-fqdn>/api/info
 ```
@@ -336,7 +329,7 @@ curl -X POST http://<container-app-fqdn>/api/echo \
 ### Identity & Access
 ✅ **Managed Identity**: User-assigned identity for ACA  
 ✅ **ACR Integration**: Passwordless auth via managed identity  
-✅ **Dual Jumpbox VMs**: Both Linux and Windows jumpbox for administrative access  
+✅ **Single Jumpbox VM**: Windows jumpbox for administrative access  
 ✅ **RBAC**: Container App managed identity for ACR pull  
 
 ### Container & Application
@@ -368,7 +361,7 @@ curl -X POST http://<container-app-fqdn>/api/echo \
 ### Cost Optimization
 ✅ **Premium ACR**: Enables private endpoints for security (use Standard for dev/test)  
 ✅ **Consumption ACA**: Pay-per-use, auto-scales to zero  
-✅ **Dual VM Sizing**: Linux (Standard_B2s) for lightweight tasks, Windows (Standard_D4s_v5) for resource-intensive operations  
+✅ **Windows Jumpbox Sizing**: Standard_D4s_v5 for administrative operations  
 ✅ **Bastion Basic**: Lower cost tier suitable for POC  
 ✅ **APIM StandardV2**: Scalable tier (use Developer for dev/test)  
 
@@ -495,7 +488,7 @@ azlz-msfoundry-sandbox-private/
 
 ### Cannot access jumpbox via Bastion
 - Verify Bastion public IP is assigned
-- Check Network Security Groups allow Bastion → Jumpbox traffic (port 22)
+- Check Network Security Groups allow Bastion → Jumpbox traffic (port 3389)
 - Ensure jumpbox has private IP in correct subnet
 
 ### Container image build fails
@@ -526,10 +519,9 @@ scripts/tf-destroy.sh
 | API Management | StandardV2 (1 cap) | $744 |
 | ACA (1 replica @ 0.5 CPU) | Consumption | $19 |
 | Log Analytics | 30-day retention | $8 |
-| Jumpbox VM (Linux) | Standard_B2s | $36 |
 | Jumpbox VM (Windows) | Standard_D4s_v5 | $186 |
 | Azure Bastion | Basic | $377 |
-| **Total Dev** | | **~$1,420** |
+| **Total Dev** | | **~$1,384** |
 
 ### Prod Environment (Production Workloads - East US2)
 
@@ -540,10 +532,9 @@ scripts/tf-destroy.sh
 | API Management | StandardV2 (1 cap) | $744 |
 | ACA (5 replicas @ 0.5 CPU ea) | Consumption | $97 |
 | Log Analytics | 30-day retention | $8 |
-| Jumpbox VM (Linux) | Standard_B2s | $36 |
 | Jumpbox VM (Windows) | Standard_D4s_v5 | $186 |
 | Azure Bastion | Basic | $377 |
-| **Total Prod** | | **~$1,498** |
+| **Total Prod** | | **~$1,462** |
 
 **Cost Optimization Options:**
 - Use ACR Standard ($11/mo) if private endpoints not required

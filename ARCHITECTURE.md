@@ -22,7 +22,7 @@ VNet: 10.0.0.0/16
 ├── Jumpbox Subnet: 10.0.3.0/24
 │   ├── Purpose: Administrative VM for diagnostics
 │   ├── Private: No public IP (accessed via Bastion)
-│   └── NSG: Only allows SSH from Bastion subnet
+│   └── NSG: Only allows RDP from Bastion subnet
 │
 ├── Bastion Subnet: 10.0.4.0/24
 │   ├── Purpose: Azure Bastion host
@@ -122,7 +122,7 @@ Private DNS Zones:
 - ✅ **No Service Principal Keys**: Managed identity eliminates credential management
 - ✅ **RBAC Role**: AcrPull role scope to specific ACR
 - ✅ **No Admin User**: ACR admin user disabled by default
-- ✅ **SSH Keys Only**: Jumpbox uses SSH keys, not passwords
+- ✅ **Bastion Access Only**: Jumpbox access is via Bastion using Windows credentials
 
 ### Application Architecture
 
@@ -194,7 +194,7 @@ ACA Subnet NSG:
   └── Implicit outbound to Azure services
 
 Jumpbox NSG:
-  ├── Allow: Bastion Subnet → 22 (SSH)
+  ├── Allow: Bastion Subnet → 3389 (RDP)
   └── Deny: All other inbound (explicit)
 
 Bastion NSG:
@@ -202,7 +202,7 @@ Bastion NSG:
   ├── Allow: GatewayManager → 443
   ├── Allow: LoadBalancer → 443
   ├── Allow: VirtualNetwork ↔ 443
-  └── Allow: Outbound for SSH/RDP to VirtualNetwork
+  └── Allow: Outbound for RDP to VirtualNetwork
 ```
 
 #### Service Endpoints
@@ -231,12 +231,6 @@ User-Assigned Identity
 
 #### Jumpbox Authentication
 ```
-Linux Jumpbox (Ubuntu 22.04):
-  ├── Authentication: SSH public/private key
-  ├── Storage: Local ~/.ssh/azlz-jumpbox
-  ├── Format: RSA 4096-bit
-  └── Access: Via Bastion (no direct SSH)
-
 Windows Jumpbox (Windows Server 2022):
   ├── Authentication: RDP username/password
   ├── Credentials: Admin account (set via variable)
@@ -394,10 +388,9 @@ ACA (Container Apps, Consumption Plan):
   ├── 0.5 vCPU, 1GB RAM = ~$20-23/month per replica
   └── Auto-scales to zero when no requests (serverless)
 
-Jumpbox VMs:
-  ├── Linux B2s: $36/mo (2 vCPU, 4GB RAM, burstable)
+Windows Jumpbox VM:
   ├── Windows D4s_v5: $180/mo (4 vCPU, 16GB RAM, dedicated)
-  ├── Spot VMs: 60-70% discount if preemption acceptable
+  ├── Spot VM: 60-70% discount if preemption acceptable
   └── Good for: Development, bastion, CI/CD runners
 
 Azure Bastion:
@@ -414,11 +407,11 @@ Log Analytics:
 
 #### Current Deployment Costs
 
-**Dev Environment** (~$1,377/mo in East US):
+**Dev Environment** (~$1,346/mo in East US):
 - ACR Premium: $50/mo
 - APIM StandardV2: $720/mo
 - ACA (1 replica): $23/mo
-- VMs (1 Linux B2s + 1 Windows D4s_v5): $216/mo
+- Windows VM (D4s_v5): $180/mo
 - Azure Bastion Basic: $365/mo
 - Log Analytics: $8/mo
 
@@ -571,7 +564,7 @@ Network & Security
 Identity & Access
   ☑ Managed identity configured
   ☑ IAM roles assigned (AcrPull)
-  ☑ SSH keys for jumpbox (no passwords)
+  ☑ Windows jumpbox credentials managed via secure secrets
   ☑ No hardcoded secrets
   ☑ Key Vault for secrets (future)
 

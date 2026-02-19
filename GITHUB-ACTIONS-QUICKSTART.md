@@ -78,7 +78,6 @@ DEV_REGISTRY_NAME              = azlzacrdev
 DEV_TF_BACKEND_RG              = azlz-terraform-state
 DEV_TF_BACKEND_STORAGE         = azlztfstatedev
 DEV_TF_BACKEND_CONTAINER       = dev
-SSH_PUBLIC_KEY                 = (paste output from cat ~/.ssh/azlz-jumpbox.pub)
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
 
@@ -90,7 +89,6 @@ QA_REGISTRY_NAME               = azlzacrqa
 QA_TF_BACKEND_RG               = azlz-terraform-state
 QA_TF_BACKEND_STORAGE          = azlztfstateqa
 QA_TF_BACKEND_CONTAINER        = qa
-SSH_PUBLIC_KEY                 = (paste output from cat ~/.ssh/azlz-jumpbox.pub)
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
 
@@ -102,7 +100,6 @@ PROD_REGISTRY_NAME             = azlzacrprod
 PROD_TF_BACKEND_RG             = azlz-terraform-state
 PROD_TF_BACKEND_STORAGE        = azlztfstateprod
 PROD_TF_BACKEND_CONTAINER      = prod
-SSH_PUBLIC_KEY                 = (paste output from cat ~/.ssh/azlz-jumpbox.pub)
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
 
@@ -113,37 +110,7 @@ REGISTRY_USERNAME              = your-acr-username
 REGISTRY_PASSWORD              = your-acr-password
 ```
 
-### Step 4: Configure SSH Keys
-
-#### Generate SSH Key Pair
-
-```bash
-# Generate a new SSH key pair (one-time, do this locally)
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/azlz-jumpbox -N ""
-
-# This creates:
-#   ~/.ssh/azlz-jumpbox          (private key - KEEP SECRET, never commit)
-#   ~/.ssh/azlz-jumpbox.pub      (public key - add to GitHub Secrets)
-
-# Display your public key
-cat ~/.ssh/azlz-jumpbox.pub
-```
-
-#### Store SSH Public Key in GitHub Secret
-
-1. Go to your GitHub repository
-2. Click **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Name: `SSH_PUBLIC_KEY`
-5. Value: Paste the entire output from `cat ~/.ssh/azlz-jumpbox.pub`
-6. Click **Add secret**
-
-**⚠️ Important:** 
-- The SSH **public key** is safe to share (stored in GitHub Secrets)
-- Your SSH **private key** (`~/.ssh/azlz-jumpbox`) must NEVER be committed to source control
-- This allows GitHub Actions to securely provision the SSH key to the Linux jumpbox VM without storing secrets in code
-
-#### Store Windows Admin Password in GitHub Secret (Optional)
+### Step 4: Store Windows Admin Password in GitHub Secret
 
 If deploying the Windows jumpbox VM:
 
@@ -346,7 +313,7 @@ az containerapp show --resource-group azlz-dev-rg --name azlz-app \
   --query properties.configuration.ingress.fqdn
 
 # Access via Jumpbox (internal only by default)
-# SSH to jumpbox via Azure Bastion, then:
+# Connect to Windows jumpbox via Azure Bastion (RDP), then:
 curl http://<container-app-fqdn>/api/info
 ```
 

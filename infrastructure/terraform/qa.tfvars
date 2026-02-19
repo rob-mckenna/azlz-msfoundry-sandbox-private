@@ -6,7 +6,6 @@ location     = "eastus"
 project_name = "azlz"
 
 # Compute
-vm_size      = "Standard_B2s"
 max_replicas = 5
 min_replicas = 1
 
@@ -31,9 +30,6 @@ enable_cicd_runner               = true
 github_runner_registration_token = "" # Set via GitHub secret
 github_runner_url                = "" # Set via GitHub secret
 runner_container_image           = "ghcr.io/myoats/actions-runner:latest"
-
-# SSH Public Key (required - replace with your key)
-ssh_public_key = "ssh-rsa AAAA..."
 
 # Windows VM Configuration
 windows_vm_size = "Standard_D4s_v5"
