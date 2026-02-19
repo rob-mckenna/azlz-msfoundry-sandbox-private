@@ -21,7 +21,7 @@ Before deploying the Azure Landing Zone, validate that you have all required per
 - [ ] Able to **create Resource Groups**
   ```bash
   # You should be able to run this successfully
-  az group create --name azlz-test-rg --location eastus
+  az group create --name azlz-test-rg --location eastus2
   # Then delete it: az group delete --name azlz-test-rg --yes
   ```
 
@@ -241,11 +241,11 @@ az role assignment list \
 ### Check Azure Quotas
 ```bash
 # Check vCPU quota for compute
-az compute vm list-usage --location eastus --output table
+az compute vm list-usage --location eastus2 --output table
 # Look for "Standard DSv5 Family vCPU" or similar
 
 # Check public IP quota
-az network public-ip list-usage --location eastus --output table
+az network public-ip list-usage --location eastus2 --output table
 ```
 
 **Required Quotas:**

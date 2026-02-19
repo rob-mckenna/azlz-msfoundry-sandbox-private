@@ -2,7 +2,7 @@
 # Used for: Production workloads - requires high availability and security
 
 environment  = "prod"
-location     = "eastus"
+location     = "eastus2"
 project_name = "azlz"
 
 # Compute

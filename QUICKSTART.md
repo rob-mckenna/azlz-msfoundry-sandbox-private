@@ -32,11 +32,11 @@ dotnet --version
 ```bash
 # Linux/Mac
 export RESOURCE_GROUP=azlz-rg
-export LOCATION=eastus
+export LOCATION=eastus2
 
 # Windows PowerShell
 $env:RESOURCE_GROUP = "azlz-rg"
-$env:LOCATION = "eastus"
+$env:LOCATION = "eastus2"
 ```
 
 ### Step 3: Configure Terraform Variables
@@ -67,7 +67,7 @@ Review these settings in terraform.tfvars and adjust if needed:
 
 ```hcl
 # Location where resources will be created
-location    = "eastus"              # Change to preferred Azure region
+location    = "eastus2"             # Change to preferred Azure region
 
 # Environment name (prefix for resource names)
 environment = "dev"                 # Or "qa", "prod"

@@ -144,7 +144,7 @@ Input variables with defaults:
 ### `terraform.tfvars`
 Environment-specific values:
 ```hcl
-location      = "eastus"
+location      = "eastus2"
 environment   = "dev"
 acr_sku       = "Premium"
 apim_sku      = "StandardV2"

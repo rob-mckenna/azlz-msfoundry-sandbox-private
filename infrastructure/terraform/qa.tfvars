@@ -2,7 +2,7 @@
 # Used for: Quality assurance and pre-production validation
 
 environment  = "qa"
-location     = "eastus"
+location     = "eastus2"
 project_name = "azlz"
 
 # Compute

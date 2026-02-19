@@ -54,7 +54,7 @@ Exports important values for use outside Terraform:
 ### terraform.tfvars
 Environment-specific values:
 ```hcl
-location                = "eastus"
+location                = "eastus2"
 environment             = "dev"
 project_name            = "azlz"
 acr_sku                 = "Premium"
@@ -186,7 +186,7 @@ Create separate tfvars for each environment:
 **dev.tfvars**
 ```hcl
 environment     = "dev"
-location        = "eastus"
+location        = "eastus2"
 acr_sku         = "Standard"  # Cost optimization for dev
 apim_sku        = "Developer" # Cost optimization for dev
 max_replicas    = 3
@@ -197,7 +197,7 @@ enable_apim_private_endpoint = false
 **prod.tfvars**
 ```hcl
 environment     = "prod"
-location        = "eastus"
+location        = "eastus2"
 acr_sku         = "Premium"  # Required for private endpoints
 apim_sku        = "StandardV2"
 max_replicas    = 10

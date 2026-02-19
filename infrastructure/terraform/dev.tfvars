@@ -2,7 +2,7 @@
 # Used for: Low-cost testing and development
 
 environment  = "dev"
-location     = "eastus"
+location     = "eastus2"
 project_name = "azlz"
 
 # Compute

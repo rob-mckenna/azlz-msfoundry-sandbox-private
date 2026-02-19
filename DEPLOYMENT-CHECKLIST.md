@@ -37,7 +37,7 @@ This checklist is for manual Terraform deployments.
 
 - [ ] **Review Configuration**
   - [ ] Check `infrastructure/terraform/terraform.tfvars`
-  - [ ] Verify location (eastus, westus, etc.)
+  - [ ] Verify location (eastus2, westus2, etc.)
   - [ ] Verify environment name (dev, staging, prod)
   - [ ] Verify resource sizing (windows_vm_size, acr_sku, replicas)
 

@@ -121,7 +121,7 @@ Set up Azure Storage for Terraform state (one time):
 RESOURCE_GROUP="azlz-terraform-state"
 STORAGE_ACCOUNT="azlztfstate"
 CONTAINER="dev"
-LOCATION="eastus"
+LOCATION="eastus2"
 
 # Create resource group
 az group create --name $RESOURCE_GROUP --location $LOCATION
@@ -294,7 +294,7 @@ Create environment-specific tfvars files:
 **infrastructure/terraform/dev.tfvars:**
 ```hcl
 environment = "dev"
-location    = "eastus"
+location    = "eastus2"
 windows_vm_size = "Standard_D4s_v5"
 max_replicas = 3
 ```
@@ -302,7 +302,7 @@ max_replicas = 3
 **infrastructure/terraform/qa.tfvars:**
 ```hcl
 environment = "qa"
-location    = "eastus"
+location    = "eastus2"
 windows_vm_size = "Standard_D4s_v5"
 max_replicas = 5
 ```
@@ -310,7 +310,7 @@ max_replicas = 5
 **infrastructure/terraform/prod.tfvars:**
 ```hcl
 environment = "prod"
-location    = "eastus"
+location    = "eastus2"
 windows_vm_size = "Standard_D4s_v5"
 max_replicas = 10
 ```

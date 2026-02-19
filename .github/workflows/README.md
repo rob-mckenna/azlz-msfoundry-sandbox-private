@@ -252,7 +252,7 @@ Extend workflows to support region selection:
 ```yaml
 strategy:
   matrix:
-    region: [eastus, westus]
+              region: [eastus2, westus2]
 ```
 
 ### Deploy to Multiple Subscriptions

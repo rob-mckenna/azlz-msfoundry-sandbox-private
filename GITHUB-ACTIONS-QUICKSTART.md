@@ -126,7 +126,7 @@ If deploying the Windows jumpbox VM:
 ```bash
 # Create resource group and storage for terraform state
 RESOURCE_GROUP="azlz-terraform-state"
-LOCATION="eastus"
+LOCATION="eastus2"
 
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
