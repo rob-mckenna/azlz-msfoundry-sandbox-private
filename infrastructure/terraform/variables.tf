@@ -257,6 +257,12 @@ variable "container_port" {
   default     = 8080
 }
 
+variable "container_image" {
+  description = "Container image to deploy in Container Apps"
+  type        = string
+  default     = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+}
+
 variable "container_cpu" {
   description = "CPU allocation for container (e.g., 0.5, 1.0)"
   type        = string

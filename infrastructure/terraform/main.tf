@@ -42,7 +42,6 @@ locals {
   common_tags = merge(
     var.tags,
     {
-      created_date = timestamp()
       location     = var.location
     }
   )
@@ -402,6 +401,8 @@ resource "azurerm_subnet" "bastion" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "bastion" {
+  count = 0
+
   subnet_id                 = azurerm_subnet.bastion.id
   network_security_group_id = azurerm_network_security_group.bastion.id
 }
@@ -753,7 +754,7 @@ resource "azapi_resource" "apim" {
     properties = {
       publisherName       = var.apim_publisher_name
       publisherEmail      = var.apim_publisher_email
-      publicNetworkAccess = var.enable_apim_private_endpoint ? "Disabled" : "Enabled"
+      publicNetworkAccess = "Enabled"
     }
   }
 
@@ -1087,16 +1088,12 @@ resource "azurerm_container_app" "main" {
     }
   }
 
-  registry {
-    identity             = azurerm_user_assigned_identity.aca.id
-    password_secret_name = "acr-password"
-    server               = azurerm_container_registry.main.login_server
-    username             = azurerm_container_registry.main.name
-  }
-
-  secret {
-    name  = "acr-password"
-    value = azurerm_container_registry.main.admin_password
+  dynamic "registry" {
+    for_each = startswith(var.container_image, "${azurerm_container_registry.main.login_server}/") ? [1] : []
+    content {
+      identity = azurerm_user_assigned_identity.aca.id
+      server   = azurerm_container_registry.main.login_server
+    }
   }
 
   template {
@@ -1104,7 +1101,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = local.container_app_name
-      image  = "${azurerm_container_registry.main.login_server}/${local.container_app_name}:latest"
+      image  = var.container_image
       cpu    = var.container_cpu
       memory = var.container_memory
 
@@ -1189,6 +1186,7 @@ resource "azurerm_windows_virtual_machine" "jumpbox" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   size                = var.windows_vm_size
+  computer_name       = "azlzjumpbox01"
 
   admin_username = var.admin_username
   admin_password = var.windows_admin_password
