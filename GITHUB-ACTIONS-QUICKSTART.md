@@ -76,7 +76,7 @@ DEV_AZURE_CREDENTIALS          = (paste JSON from service principal)
 DEV_RESOURCE_GROUP             = azlz-dev-rg
 DEV_REGISTRY_NAME              = azlzacrdev
 DEV_TF_BACKEND_RG              = azlz-terraform-state
-DEV_TF_BACKEND_STORAGE         = azlztfstatedev
+DEV_TF_BACKEND_STORAGE         = (storage account created in Step 5 for dev)
 DEV_TF_BACKEND_CONTAINER       = dev
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
@@ -87,7 +87,7 @@ QA_AZURE_CREDENTIALS           = (paste JSON from service principal)
 QA_RESOURCE_GROUP              = azlz-qa-rg
 QA_REGISTRY_NAME               = azlzacrqa
 QA_TF_BACKEND_RG               = azlz-terraform-state
-QA_TF_BACKEND_STORAGE          = azlztfstateqa
+QA_TF_BACKEND_STORAGE          = (storage account created in Step 5 for qa)
 QA_TF_BACKEND_CONTAINER        = qa
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
@@ -98,7 +98,7 @@ PROD_AZURE_CREDENTIALS         = (paste JSON from service principal)
 PROD_RESOURCE_GROUP            = azlz-prod-rg
 PROD_REGISTRY_NAME             = azlzacrprod
 PROD_TF_BACKEND_RG             = azlz-terraform-state
-PROD_TF_BACKEND_STORAGE        = azlztfstateprod
+PROD_TF_BACKEND_STORAGE        = (storage account created in Step 5 for prod)
 PROD_TF_BACKEND_CONTAINER      = prod
 WINDOWS_ADMIN_PASSWORD         = (strong 12-123 char password)
 ```
@@ -130,9 +130,13 @@ LOCATION="eastus2"
 
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
+# Storage account names must be globally unique (3-24 chars, lowercase/numbers only)
+UNIQUE_SUFFIX=$(az account show --query id -o tsv | md5sum | cut -c1-6)
+
 # Create storage accounts for each environment
 for ENV in dev qa prod; do
-  STORAGE="${ENV}tfstate"
+  STORAGE="azlz${ENV}tf${UNIQUE_SUFFIX}"
+  echo "Creating storage account: $STORAGE"
   
   az storage account create \
     --name "$STORAGE" \
@@ -144,6 +148,11 @@ for ENV in dev qa prod; do
     --name "$ENV" \
     --account-name "$STORAGE"
 done
+
+# Use the printed names for GitHub environment secrets:
+# DEV_TF_BACKEND_STORAGE  = storage account created when ENV=dev
+# QA_TF_BACKEND_STORAGE   = storage account created when ENV=qa
+# PROD_TF_BACKEND_STORAGE = storage account created when ENV=prod
 ```
 
 ### Step 6: First Deployment
