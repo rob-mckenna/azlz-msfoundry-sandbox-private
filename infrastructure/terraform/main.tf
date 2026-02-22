@@ -34,6 +34,10 @@ locals {
   foundry_name                  = "${var.project_name}fdry${local.unique_suffix}${var.environment}"
   foundry_private_endpoint_name = "${var.project_name}-foundry-pe"
 
+  github_repo_path                 = replace(var.github_runner_url, "https://github.com/", "")
+  github_repo_parts                = split("/", local.github_repo_path)
+  github_registration_token_api_url = length(local.github_repo_parts) >= 2 ? "https://api.github.com/repos/${local.github_repo_parts[0]}/${local.github_repo_parts[1]}/actions/runners/registration-token" : ""
+
   log_analytics_workspace_name = "${var.project_name}-law-${var.environment}"
   application_insights_name    = "${var.project_name}-ai-${var.environment}"
   user_assigned_identity_name  = "${var.project_name}-uami"
@@ -1054,13 +1058,18 @@ resource "azurerm_container_app_job" "github_runner" {
       cpu    = 1
 
       env {
-        name  = "GITHUB_TOKEN"
+        name  = "GITHUB_PAT"
         value = var.github_runner_registration_token
       }
 
       env {
-        name  = "GITHUB_REPOSITORY"
+        name  = "GH_URL"
         value = var.github_runner_url
+      }
+
+      env {
+        name  = "REGISTRATION_TOKEN_API_URL"
+        value = local.github_registration_token_api_url
       }
 
       env {

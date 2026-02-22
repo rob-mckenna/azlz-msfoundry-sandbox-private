@@ -35,25 +35,27 @@ echo -e "${YELLOW}==> Logging into ACR and pushing image${NC}"
 az acr login --name "${ACR_NAME}"
 docker push "${RUNNER_IMAGE}"
 
-echo -e "${YELLOW}==> Getting fresh GitHub runner registration token${NC}"
-RUNNER_TOKEN="$(gh api -X POST "repos/${GITHUB_REPO}/actions/runners/registration-token" --jq .token)"
+echo -e "${YELLOW}==> Getting GitHub PAT from gh auth session${NC}"
+GITHUB_PAT="$(gh auth token)"
 
-if [ -z "${RUNNER_TOKEN}" ]; then
-  echo -e "${RED}Failed to obtain GitHub runner registration token${NC}"
+if [ -z "${GITHUB_PAT}" ]; then
+  echo -e "${RED}Failed to obtain GitHub PAT from gh auth token${NC}"
   exit 1
 fi
 
 echo -e "${YELLOW}==> Deploying runner job with Terraform${NC}"
 pushd "${TERRAFORM_DIR}" >/dev/null
 
-export TF_VAR_github_runner_registration_token="${RUNNER_TOKEN}"
 export TF_VAR_github_runner_url="${GITHUB_REPO_URL}"
 export TF_VAR_runner_container_image="${RUNNER_IMAGE}"
 
 terraform validate
-terraform apply -target=azurerm_container_app_job.github_runner[0] -auto-approve
-
-unset TF_VAR_github_runner_registration_token
+terraform apply \
+  -target=azurerm_container_app_job.github_runner[0] \
+  -var="github_runner_registration_token=${GITHUB_PAT}" \
+  -var="github_runner_url=${GITHUB_REPO_URL}" \
+  -var="runner_container_image=${RUNNER_IMAGE}" \
+  -auto-approve
 
 popd >/dev/null
 

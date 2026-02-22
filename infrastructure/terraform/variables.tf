@@ -79,7 +79,7 @@ variable "enable_cicd_runner" {
 }
 
 variable "github_runner_registration_token" {
-  description = "GitHub Runner registration token (from GitHub org/repo settings)"
+  description = "GitHub PAT used by the runner container to request short-lived registration tokens"
   type        = string
   default     = ""
   sensitive   = true
