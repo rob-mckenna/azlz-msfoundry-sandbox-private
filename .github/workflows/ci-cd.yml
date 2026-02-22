@@ -113,7 +113,7 @@ jobs:
     name: Deploy to ${{ matrix.environment }}
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment)
     
     strategy:
       matrix:
