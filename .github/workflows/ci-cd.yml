@@ -91,10 +91,18 @@ jobs:
           echo "Branch: $BRANCH"
           echo "Tags: $TAGS"
 
+      - name: Install Azure CLI
+        run: |
+          python3 -m pip install --user azure-cli
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.DEV_AZURE_CREDENTIALS }}
+        run: |
+          az login --service-principal \
+            --username "${{ secrets.DEV_AZURE_CLIENT_ID }}" \
+            --password "${{ secrets.DEV_AZURE_CLIENT_SECRET }}" \
+            --tenant "${{ secrets.DEV_AZURE_TENANT_ID }}"
+          az account set --subscription "${{ secrets.DEV_AZURE_SUBSCRIPTION_ID }}"
 
       - name: Build and push Docker image
         id: build
