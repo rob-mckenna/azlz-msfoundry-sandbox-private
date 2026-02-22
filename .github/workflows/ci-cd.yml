@@ -146,7 +146,7 @@ jobs:
           echo "Deploying to $ENV environment"
 
       - name: Azure Login
-        if: steps.target.outcome == 'success'
+        if: steps.target.outcome == 'success' && (github.event_name != 'workflow_dispatch' || github.event.inputs.environment == matrix.environment)
         uses: azure/login@v1
         with:
           creds: ${{ secrets[format('{0}_AZURE_CREDENTIALS', matrix.environment)] }}
