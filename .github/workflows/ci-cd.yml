@@ -132,13 +132,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         if: |
-          (github.ref_name == matrix.branch) || 
+          (github.event_name == 'push' && github.ref_name == matrix.branch) || 
           (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment)
 
       - name: Determine deployment target
         id: target
         if: |
-          (github.ref_name == matrix.branch) || 
+          (github.event_name == 'push' && github.ref_name == matrix.branch) || 
           (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == matrix.environment)
         run: |
           ENV="${{ matrix.environment }}"
