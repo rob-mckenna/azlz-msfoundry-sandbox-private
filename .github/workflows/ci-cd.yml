@@ -35,7 +35,7 @@ jobs:
     runs-on: self-hosted
     
     outputs:
-      image_tag: ${{ steps.meta.outputs.tags }}
+      image_tag: ${{ steps.meta.outputs.primary_tag }}
       image_digest: ${{ steps.build.outputs.digest }}
     
     steps:
@@ -68,37 +68,49 @@ jobs:
       - name: Generate image metadata
         id: meta
         run: |
-          TAG="${{ github.sha }}"
+          PRIMARY_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          SECONDARY_TAG=""
           BRANCH="${{ github.ref_name }}"
           
           if [ "$BRANCH" = "main" ]; then
-            TAG="${{ github.sha }},latest"
+            SECONDARY_TAG="${{ env.IMAGE_NAME }}:latest"
           elif [ "$BRANCH" = "qa" ]; then
-            TAG="${{ github.sha }},qa-latest"
+            SECONDARY_TAG="${{ env.IMAGE_NAME }}:qa-latest"
           elif [ "$BRANCH" = "develop" ]; then
-            TAG="${{ github.sha }},develop-latest"
+            SECONDARY_TAG="${{ env.IMAGE_NAME }}:develop-latest"
           fi
-          
-          echo "tags=${TAG}" >> $GITHUB_OUTPUT
-          echo "Branch: $BRANCH"
-          echo "Tags: $TAG"
 
-      - name: Login to Azure Container Registry
-        uses: docker/login-action@v3
+          if [ -n "$SECONDARY_TAG" ]; then
+            TAGS="$PRIMARY_TAG,$SECONDARY_TAG"
+          else
+            TAGS="$PRIMARY_TAG"
+          fi
+
+          echo "primary_tag=$PRIMARY_TAG" >> $GITHUB_OUTPUT
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "Branch: $BRANCH"
+          echo "Tags: $TAGS"
+
+      - name: Azure Login
+        uses: azure/login@v1
         with:
-          registry: ${{ env.REGISTRY_URL }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          creds: ${{ secrets.DEV_AZURE_CREDENTIALS }}
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=registry,ref=${{ env.REGISTRY_URL }}/azlz-app:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY_URL }}/azlz-app:buildcache,mode=max
+        run: |
+          TAG_ARGS="--image azlz-app:${{ github.sha }}"
+
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            TAG_ARGS="$TAG_ARGS --image azlz-app:latest"
+          elif [ "${{ github.ref_name }}" = "qa" ]; then
+            TAG_ARGS="$TAG_ARGS --image azlz-app:qa-latest"
+          elif [ "${{ github.ref_name }}" = "develop" ]; then
+            TAG_ARGS="$TAG_ARGS --image azlz-app:develop-latest"
+          fi
+
+          az acr build --registry "${{ secrets.DEV_REGISTRY_NAME }}" $TAG_ARGS .
+          echo "digest=n/a" >> $GITHUB_OUTPUT
 
   # =====================
   # CD: DEPLOY
