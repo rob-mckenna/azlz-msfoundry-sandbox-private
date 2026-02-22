@@ -437,6 +437,17 @@ resource "azurerm_subnet" "cicd" {
     "Microsoft.ContainerRegistry",
     "Microsoft.Storage"
   ]
+
+  delegation {
+    name = "delegation"
+
+    service_delegation {
+      name = "Microsoft.App/environments"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action"
+      ]
+    }
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "cicd" {
@@ -1008,6 +1019,31 @@ resource "azurerm_container_app_job" "github_runner" {
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.cicd[0].id]
+  }
+
+  dynamic "secret" {
+    for_each = startswith(var.runner_container_image, "ghcr.io/") && var.github_runner_registry_username != "" && var.github_runner_registry_password != "" ? [1] : []
+    content {
+      name  = "ghcr-password"
+      value = var.github_runner_registry_password
+    }
+  }
+
+  dynamic "registry" {
+    for_each = startswith(var.runner_container_image, "ghcr.io/") && var.github_runner_registry_username != "" && var.github_runner_registry_password != "" ? [1] : []
+    content {
+      server               = "ghcr.io"
+      username             = var.github_runner_registry_username
+      password_secret_name = "ghcr-password"
+    }
+  }
+
+  dynamic "registry" {
+    for_each = startswith(var.runner_container_image, "${azurerm_container_registry.main.login_server}/") ? [1] : []
+    content {
+      server   = azurerm_container_registry.main.login_server
+      identity = azurerm_user_assigned_identity.cicd[0].id
+    }
   }
 
   template {

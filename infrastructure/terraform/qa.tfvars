@@ -29,7 +29,7 @@ foundry_project_name            = "qa-project"
 enable_cicd_runner               = true
 github_runner_registration_token = "" # Set via GitHub secret
 github_runner_url                = "" # Set via GitHub secret
-runner_container_image           = "ghcr.io/myoats/actions-runner:latest"
+runner_container_image           = "azlzacr2cbd.azurecr.io/github-actions-runner:1.0"
 
 # Windows VM Configuration
 windows_vm_size = "Standard_D4s_v5"

@@ -94,7 +94,20 @@ variable "github_runner_url" {
 variable "runner_container_image" {
   description = "Container image for GitHub Actions runner"
   type        = string
-  default     = "ghcr.io/myoats/actions-runner:latest"
+  default     = "<your-acr>.azurecr.io/github-actions-runner:1.0"
+}
+
+variable "github_runner_registry_username" {
+  description = "Optional registry username for runner image pulls (for example GHCR username)"
+  type        = string
+  default     = ""
+}
+
+variable "github_runner_registry_password" {
+  description = "Optional registry password/token for runner image pulls (for example GHCR PAT)"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 # ACR Configuration

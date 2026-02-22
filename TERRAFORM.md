@@ -221,14 +221,20 @@ To enable the optional CI/CD runner (GitHub Actions), add to your terraform.tfva
 # Enable self-hosted runner
 enable_cicd_runner = true
 
-# GitHub runner registration token (from repo → Settings → Actions → Runners)
-github_runner_registration_token = "AAAA..."
-
 # GitHub repository URL for runner registration
 github_runner_url = "https://github.com/your-org/your-repo"
 
-# Container image for the runner (must have GitHub Actions runner pre-installed)
-runner_container_image = "ghcr.io/myoats/actions-runner:latest"
+# Container image for the runner (built from Microsoft tutorial source and pushed to your ACR)
+runner_container_image = "<your-acr>.azurecr.io/github-actions-runner:1.0"
+```
+
+Deploy runner image + job using:
+
+```bash
+chmod +x scripts/deploy-github-runner-job.sh
+ACR_NAME=<your-acr-name> \
+GITHUB_REPO=<your-org>/<your-repo> \
+./scripts/deploy-github-runner-job.sh
 ```
 
 The CI/CD runner will:

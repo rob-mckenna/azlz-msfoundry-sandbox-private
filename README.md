@@ -146,13 +146,13 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 - **Deployment**: Container Apps Job in dedicated CI/CD environment
 - **Subnet**: CI/CD Subnet (10.0.6.0/24) - isolated for CI/CD workloads
 - **Features**:
-  - Manual trigger Container App Job
+  - Manual trigger Container Apps Job
   - Runs inside VNet for secure artifact handling
   - ACR pull permission via managed identity
   - Configurable via `enable_cicd_runner` feature flag
   - Secrets passed via environment variables
 - **Use Case**: GitHub Actions CI/CD without exposed runners
-- **Configuration**: Set `enable_cicd_runner = true` and provide GitHub registration token
+- **Configuration**: Set `enable_cicd_runner = true` and provide `github_runner_url` + `runner_container_image`
 - **Setup Guide**: See [CI-CD-RUNNER.md](CI-CD-RUNNER.md)
 
 ### 10. **Monitoring & Logging**
@@ -233,29 +233,37 @@ For manual control or learning purposes, follow the Prerequisites and Setup step
    
    To deploy a self-hosted GitHub Actions runner inside the VNet:
    
-   a. Get your GitHub runner registration token:
-   - Go to your GitHub repository → Settings → Actions → Runners → New self-hosted runner
-   - Copy the registration token (starts with `AAAA...`)
-   
-   b. Update `infrastructure/terraform/terraform.tfvars`:
+  a. Update `infrastructure/terraform/terraform.tfvars`:
    ```hcl
    enable_cicd_runner               = true
-   github_runner_registration_token = "AAAA..." # Your GitHub token (from repo settings)
-   github_runner_url                = "https://github.com/your-org/your-repo"
-   runner_container_image           = "ghcr.io/myoats/actions-runner:latest"  # Or your custom image
+  github_runner_url                = "https://github.com/your-org/your-repo"
+  runner_container_image           = "<your-acr>.azurecr.io/github-actions-runner:1.0"
    ```
+
+  b. Run the one-shot deployment script (build image from Microsoft sample source, push to ACR, deploy runner job, verify):
+  ```bash
+  chmod +x scripts/deploy-github-runner-job.sh
+  ACR_NAME=<your-acr-name> \
+  GITHUB_REPO=<your-org>/<your-repo> \
+  ./scripts/deploy-github-runner-job.sh
+  ```
+
+  The script builds from tutorial source:
+  `https://github.com/Azure-Samples/container-apps-ci-cd-runner-tutorial.git`
    
-   c. Redeploy infrastructure:
-   ```bash
-   cd infrastructure/terraform
-   terraform plan
-   terraform apply
-   ```
-   
-   d. Verify runner is registered:
+   c. Verify runner is registered:
    - Go to GitHub repository → Settings → Actions → Runners
-   - Look for the new `azlz-github-runner` runner (may take 1-2 minutes to appear)
+   - Look for the new `azlz-runner` runner (may take 1-2 minutes to appear)
    - Status should be "Idle" when ready
+
+  d. Validate Container Apps Job execution after triggering a workflow that uses `runs-on: self-hosted`:
+   ```bash
+   az containerapp job execution list \
+     --name azlz-runner \
+     --resource-group azlz-dev-rg \
+     --output table \
+     --query '[].{Status:properties.status,Name:name,StartTime:properties.startTime}'
+   ```
    
    **Security Notes**:
    - Runner token is passed securely via environment variable

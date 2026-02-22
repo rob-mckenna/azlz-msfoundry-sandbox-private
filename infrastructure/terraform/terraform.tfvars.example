@@ -46,7 +46,7 @@ foundry_project_description     = "Microsoft Foundry project for private network
 enable_cicd_runner             = false  # Set to true to enable GitHub Actions runner
 github_runner_registration_token = ""   # Set to your GitHub runner registration token
 github_runner_url              = ""     # Set to your GitHub repo/org URL
-runner_container_image         = "ghcr.io/myoats/actions-runner:latest"
+runner_container_image         = "<your-acr>.azurecr.io/github-actions-runner:1.0"
 
 # VM Configuration
 admin_username = "azureuser"

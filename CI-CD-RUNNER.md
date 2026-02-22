@@ -30,24 +30,15 @@ Build artifacts stored privately
 2. **Organization/Repository Permissions** to create self-hosted runners:
    - Personal repo: You own it
    - Organization repo: Admin or Org owner permissions
-
-2. **GitHub PAT or Registration Token**:
-   - Navigate to: `GitHub → Settings → Actions → Runners`
-   - Click "New self-hosted runner"
-   - Copy the **registration token** (starts with `AAAA...`)
+3. **Local toolchain**:
+  - Azure CLI (`az`) authenticated to your target subscription
+  - GitHub CLI (`gh`) authenticated to the target repo
+  - Docker
+  - Terraform
 
 ## Setup Instructions
 
-### Step 1: Get GitHub Runner Token
-
-1. Go to your GitHub repository (or organization)
-2. Settings → Actions → Runners → "New self-hosted runner"
-3. Copy the **registration token** (valid for ~1 hour)
-   ```
-   AAAA...
-   ```
-
-### Step 2: Update Terraform Configuration
+### Step 1: Update Terraform Configuration
 
 Edit `infrastructure/terraform/terraform.tfvars`:
 
@@ -55,30 +46,20 @@ Edit `infrastructure/terraform/terraform.tfvars`:
 # Enable the GitHub Actions runner
 enable_cicd_runner = true
 
-# Paste your GitHub registration token (from Step 1)
-github_runner_registration_token = "AAAA..."
-
 # Your GitHub repository URL
 github_runner_url = "https://github.com/your-org/your-repo"
 
-# Container image with GitHub Actions runner pre-installed
-# Default: ghcr.io/myoats/actions-runner:latest
-runner_container_image = "ghcr.io/myoats/actions-runner:latest"
+# Container image built from Microsoft tutorial source and stored in your ACR
+runner_container_image = "<your-acr>.azurecr.io/github-actions-runner:1.0"
 ```
 
-### Step 3: Deploy Infrastructure
+### Step 2: Deploy Infrastructure
 
 ```bash
-cd infrastructure/terraform
-
-# Initialize (if not already done)
-terraform init
-
-# Plan the deployment
-terraform plan
-
-# Apply the changes
-terraform apply
+chmod +x scripts/deploy-github-runner-job.sh
+ACR_NAME=<your-acr-name> \
+GITHUB_REPO=<your-org>/<your-repo> \
+./scripts/deploy-github-runner-job.sh
 ```
 
 This creates:
@@ -88,12 +69,12 @@ This creates:
 - User-assigned managed identity with ACR pull permission
 - Container Apps Job with GitHub runner
 
-### Step 4: Verify Runner Registration
+### Step 3: Verify Runner Registration
 
 The runner will automatically register with GitHub (takes 1-2 minutes):
 
 1. Go to your GitHub repo: **Settings → Actions → Runners**
-2. Look for `azlz-github-runner` in the list
+2. Look for `azlz-runner` in the list
 3. Status should be **"Idle"** when ready
 
 ## Using the Runner in GitHub Actions
@@ -139,7 +120,7 @@ jobs:
 ### Key Points
 
 - **runs-on**: Use `self-hosted` to use your custom runner
-- **ACR Access**: The runner has managed identity with ACR pull/push permissions
+- **ACR Access**: The runner has managed identity with ACR pull permission by default
 - **Network Access**: Can communicate with:
   - Private ACR (via private endpoint)
   - Private Container Apps (via internal load balancer)
@@ -202,7 +183,7 @@ RUN apt-get update && apt-get install -y \
 - Check registration token is valid (they expire)
 - Verify `enable_cicd_runner = true` in terraform.tfvars
 - Run `terraform apply` again
-- Check Azure Portal: Container Apps → azlz-cicd-app-env → Jobs → azlz-github-runner
+- Check Azure Portal: Container Apps → azlz-cicd-env-dev (or your env) → Jobs → azlz-runner
 
 ### ACR push fails
 - Verify managed identity has AcrPush role (current default is AcrPull)
