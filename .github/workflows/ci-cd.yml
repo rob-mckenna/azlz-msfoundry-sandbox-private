@@ -32,7 +32,7 @@ jobs:
   # =====================
   build:
     name: Build & Test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     
     outputs:
       image_tag: ${{ steps.meta.outputs.primary_tag }}
@@ -91,34 +91,22 @@ jobs:
           echo "Branch: $BRANCH"
           echo "Tags: $TAGS"
 
-      - name: Install Azure CLI
-        run: |
-          python3 -m pip install --user azure-cli
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Azure Login
-        run: |
-          az login --service-principal \
-            --username "${{ secrets.DEV_AZURE_CLIENT_ID }}" \
-            --password "${{ secrets.DEV_AZURE_CLIENT_SECRET }}" \
-            --tenant "${{ secrets.DEV_AZURE_TENANT_ID }}"
-          az account set --subscription "${{ secrets.DEV_AZURE_SUBSCRIPTION_ID }}"
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Build and push Docker image
         id: build
-        run: |
-          TAG_ARGS="--image azlz-app:${{ github.sha }}"
-
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            TAG_ARGS="$TAG_ARGS --image azlz-app:latest"
-          elif [ "${{ github.ref_name }}" = "qa" ]; then
-            TAG_ARGS="$TAG_ARGS --image azlz-app:qa-latest"
-          elif [ "${{ github.ref_name }}" = "develop" ]; then
-            TAG_ARGS="$TAG_ARGS --image azlz-app:develop-latest"
-          fi
-
-          az acr build --registry "${{ secrets.DEV_REGISTRY_NAME }}" $TAG_ARGS .
-          echo "digest=n/a" >> $GITHUB_OUTPUT
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ env.REGISTRY_URL }}/azlz-app:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY_URL }}/azlz-app:buildcache,mode=max
 
   # =====================
   # CD: DEPLOY
@@ -126,7 +114,7 @@ jobs:
   deploy:
     name: Deploy to ${{ matrix.environment }}
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     
     strategy:
