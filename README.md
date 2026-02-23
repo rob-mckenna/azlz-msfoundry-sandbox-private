@@ -46,6 +46,14 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 │  │  │  └──────────────────────────────────────────┘    │   │  │
 │  │  └──────────────────────────────────────────────────┘   │  │
 │  │                                                         │  │
+│  │  ┌──────────────────────────────────────────────────┐   │  │
+│  │  │         Foundry Subnet (10.0.7.0/24)             │   │  │
+│  │  │  ┌──────────────────────────────────────────┐    │   │  │
+│  │  │  │ Microsoft Foundry AIServices Account     │    │   │  │
+│  │  │  │ + Foundry Project (Private Endpoint)     │    │   │  │
+│  │  │  └──────────────────────────────────────────┘    │   │  │
+│  │  └──────────────────────────────────────────────────┘   │  │
+│  │                                                         │  │
 │  └─────────────────────────────────────────────────────────┘  │
 │                                                               │
 │  ┌─────────────────────────────────────────────────────────┐  │
@@ -58,6 +66,7 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 │  │         Private Endpoints & DNS                         │  │
 │  │         - ACR Private Endpoint                          │  │
 │  │         - APIM Private Endpoint                         │  │
+│  │         - Foundry Private Endpoint                      │  │
 │  │         - Container Apps Internal LB                    │  │
 │  │         - Private DNS Zones                             │  │
 │  └─────────────────────────────────────────────────────────┘  │
@@ -110,7 +119,15 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
   - System-assigned managed identity
   - Service endpoints for Storage, SQL, Key Vault
 
-### 5. **Jumpbox VM**
+### 5. **Microsoft Foundry**
+- **Resource Type**: AI Services account (`AIServices`) with project management enabled
+- **Project**: Dedicated Foundry project resource for workload isolation
+- **Network**: Public network access disabled when private endpoint is enabled
+- **Private Endpoint**: Uses `account` subresource in dedicated Foundry subnet
+- **Private DNS**: `privatelink.cognitiveservices.azure.com`, `privatelink.openai.azure.com`, `privatelink.services.ai.azure.com`
+- **Access Pattern**: Use existing Bastion + jumpbox for private-network access (no ExpressRoute/VPN gateway required)
+
+### 6. **Jumpbox VM**
 
 #### Windows Jumpbox
 - **Image**: Windows Server 2022 Datacenter (Azure Edition)
@@ -119,19 +136,11 @@ A comprehensive, lightweight Azure Landing Zone implementation featuring virtual
 - **Security**: RDP password-based authentication
 - **Use**: Windows-based administrative tasks and tool compatibility
 
-### 6. **Azure Bastion**
+### 7. **Azure Bastion**
 - **SKU**: Basic
 - **Access**: Secure RDP to jumpbox without public IP exposure
 - **Features**: Browser-based console access
 - **Network Security**: Properly configured NSGs
-
-### 7. **Microsoft Foundry**
-- **Resource Type**: AI Services account (`AIServices`) with project management enabled
-- **Project**: Dedicated Foundry project resource for workload isolation
-- **Network**: Public network access disabled when private endpoint is enabled
-- **Private Endpoint**: Uses `account` subresource in dedicated Foundry subnet
-- **Private DNS**: `privatelink.cognitiveservices.azure.com`, `privatelink.openai.azure.com`, `privatelink.services.ai.azure.com`
-- **Access Pattern**: Use existing Bastion + jumpbox for private-network access (no ExpressRoute/VPN gateway required)
 
 ### 8. **GitHub Actions CI/CD Automation** (Recommended)
 - **Workflows**: Automated build, test, and deploy pipelines
