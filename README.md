@@ -548,11 +548,11 @@ scripts/tf-destroy.sh
 - Use ACR Standard ($11/mo) if private endpoints not required
 - Use APIM Developer tier ($50/mo) for dev/test environments
 - Scale ACA to zero replicas when not in use (serverless)
-- Disable Bastion ($365/mo) when not needed or use on-demand pricing
+- Disable Bastion ($377/mo) when not needed or use on-demand pricing
 - Use Spot VMs for jumpbox (saves 60-70%, but can be preempted)
 - Reserve instances for longer commitments (20-50% savings)
 
-*Note: Pricing as of February 2026. Use [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/) for real-time estimates.*
+*Note: Pricing as of February 2026. Use [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/) for real-time estimates. This baseline excludes variable Microsoft Foundry model/token usage costs and data egress.*
 
 ## License
 
