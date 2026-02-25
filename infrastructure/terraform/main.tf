@@ -376,6 +376,9 @@ resource "azurerm_subnet" "aca" {
     name = "delegation"
     service_delegation {
       name = "Microsoft.App/environments"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action"
+      ]
     }
   }
 }
@@ -802,6 +805,13 @@ resource "azurerm_api_management_logger" "app_insights" {
     instrumentation_key = azurerm_application_insights.main[0].instrumentation_key
   }
 
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      application_insights
+    ]
+  }
+
   depends_on = [
     azurerm_application_insights.main
   ]
@@ -961,6 +971,7 @@ resource "azurerm_container_app_environment" "main" {
   internal_load_balancer_enabled = var.enable_aca_private_endpoint
 
   lifecycle {
+    prevent_destroy = true
     ignore_changes = [
       infrastructure_resource_group_name
     ]

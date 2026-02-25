@@ -52,6 +52,9 @@ local.tfvars
 .terraform.lock.hcl
 terraform.log
 tfplan
+tfplan*
+*.tfplan
+*.tfplan.*
 crash.log
 override.tf
 override.tf.json

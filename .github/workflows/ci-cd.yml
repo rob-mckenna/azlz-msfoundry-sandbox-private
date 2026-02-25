@@ -1,5 +1,10 @@
 name: Build, Test & Deploy
 
+# Policy:
+# This workflow handles application build/test/deploy only.
+# Infrastructure (Terraform) changes must run through deploy-infrastructure.yml,
+# which enforces plan safety checks and blocks unapproved destroy actions.
+
 on:
   push:
     branches:
@@ -243,6 +248,11 @@ jobs:
     if: always()
     
     steps:
+      - name: Infrastructure policy reminder
+        run: |
+          echo "Infrastructure changes are not executed in this workflow."
+          echo "Use Deploy Infrastructure (Terraform) workflow for plan/apply/destroy with safety checks."
+
       - name: Check build status
         run: |
           if [ "${{ needs.build.result }}" = "success" ]; then

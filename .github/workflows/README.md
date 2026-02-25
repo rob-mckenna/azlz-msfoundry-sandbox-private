@@ -58,7 +58,15 @@ Manual Terraform workflow for managing cloud infrastructure changes.
 **Protection:**
 - PROD requires approval before apply/destroy
 - Always see plan before applying
+- Plan/apply is blocked by default when destroy actions are detected
+- Destructive changes require explicit opt-in (`allow_destroy_changes=true`)
 - Full audit trail in GitHub Actions logs
+
+### Infrastructure Change Policy
+
+- Do not run Terraform from `ci-cd.yml`.
+- All Terraform plan/apply/destroy operations must use `deploy-infrastructure.yml`.
+- Default behavior is non-destructive; destroy/replacement actions must be explicitly approved.
 
 ### 3. **Tests** (`test.yml`)
 

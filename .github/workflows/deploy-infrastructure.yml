@@ -20,6 +20,14 @@ on:
           - apply
           - destroy
         default: plan
+      allow_destroy_changes:
+        description: 'Allow planned destroys/replacements for plan/apply (default: false)'
+        required: true
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+        default: 'false'
 
 permissions:
   id-token: write
@@ -94,6 +102,33 @@ jobs:
           echo "plan_success=true" >> $GITHUB_OUTPUT
         continue-on-error: true
 
+      - name: Safety Check - Block Destroy Actions
+        if: steps.plan.outputs.plan_success == 'true' && github.event.inputs.action != 'destroy'
+        id: safety
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform show -no-color tfplan > tfplan.txt
+
+          PLAN_SUMMARY=$(grep "^Plan:" tfplan.txt | tail -1 || true)
+          DESTROY_COUNT=$(echo "$PLAN_SUMMARY" | sed -nE 's/^Plan: [0-9]+ to add, [0-9]+ to change, ([0-9]+) to destroy\./\1/p')
+
+          if [ -z "$DESTROY_COUNT" ]; then
+            echo "Unable to parse destroy count from plan summary."
+            echo "Summary line: $PLAN_SUMMARY"
+            exit 1
+          fi
+
+          echo "Plan summary: $PLAN_SUMMARY"
+
+          if [ "$DESTROY_COUNT" -gt 0 ] && [ "${{ github.event.inputs.allow_destroy_changes }}" != "true" ]; then
+            echo "❌ Safety check failed: plan includes $DESTROY_COUNT destroy action(s)."
+            echo "Set allow_destroy_changes=true only when destructive changes are intentional."
+            exit 1
+          fi
+
+          echo "✅ Safety check passed: no unapproved destroy actions detected."
+          echo "destroy_count=$DESTROY_COUNT" >> $GITHUB_OUTPUT
+
       - name: Generate Plan Summary
         if: steps.plan.outputs.plan_success == 'true'
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -102,6 +137,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "**Action:** ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Allow Destroy Changes:** ${{ github.event.inputs.allow_destroy_changes }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           terraform show -no-color tfplan | head -50 >> $GITHUB_STEP_SUMMARY
@@ -109,7 +145,7 @@ jobs:
           echo "*(Showing first 50 lines - full plan available in logs)*" >> $GITHUB_STEP_SUMMARY
 
       - name: Terraform Apply
-        if: github.event.inputs.action == 'apply' && steps.plan.outputs.plan_success == 'true'
+        if: github.event.inputs.action == 'apply' && steps.plan.outputs.plan_success == 'true' && (github.event.inputs.allow_destroy_changes == 'true' || steps.safety.outputs.destroy_count == '0')
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "Applying Terraform configuration to ${{ github.event.inputs.environment }}..."
