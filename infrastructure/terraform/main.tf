@@ -390,6 +390,12 @@ resource "azurerm_subnet" "jumpbox" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.jumpbox_subnet_address_space]
+
+  default_outbound_access_enabled = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "jumpbox" {
@@ -1215,6 +1221,10 @@ resource "azurerm_public_ip" "jumpbox_windows" {
   idle_timeout_in_minutes = 4
 
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_network_interface" "jumpbox_windows" {
@@ -1230,6 +1240,10 @@ resource "azurerm_network_interface" "jumpbox_windows" {
   }
 
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_windows_virtual_machine" "jumpbox" {
@@ -1259,6 +1273,10 @@ resource "azurerm_windows_virtual_machine" "jumpbox" {
   }
 
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # =====================
