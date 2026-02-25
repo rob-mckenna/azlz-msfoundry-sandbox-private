@@ -954,6 +954,12 @@ resource "azurerm_container_app_environment" "main" {
   infrastructure_subnet_id       = azurerm_subnet.aca.id
   internal_load_balancer_enabled = var.enable_aca_private_endpoint
 
+  lifecycle {
+    ignore_changes = [
+      infrastructure_resource_group_name
+    ]
+  }
+
   tags = local.common_tags
 
   depends_on = [
