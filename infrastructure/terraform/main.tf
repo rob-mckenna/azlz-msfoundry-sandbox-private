@@ -91,6 +91,30 @@ resource "azurerm_network_security_group" "aca" {
   tags                = local.common_tags
 
   security_rule {
+    name                       = "AllowVnetInbound"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "VirtualNetwork"
+  }
+
+  security_rule {
+    name                       = "AllowAzureLoadBalancerInbound"
+    priority                   = 130
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
     name                       = "AllowHttps"
     priority                   = 100
     direction                  = "Inbound"
@@ -354,6 +378,7 @@ resource "azurerm_subnet" "acr" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.acr_subnet_address_space]
+  default_outbound_access_enabled = false
 
   service_endpoints = [
     "Microsoft.ContainerRegistry",
@@ -371,6 +396,7 @@ resource "azurerm_subnet" "aca" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.aca_subnet_address_space]
+  default_outbound_access_enabled = false
 
   delegation {
     name = "delegation"
@@ -411,6 +437,7 @@ resource "azurerm_subnet" "bastion" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.bastion_subnet_address_space]
+  default_outbound_access_enabled = false
 }
 
 resource "azurerm_subnet_network_security_group_association" "bastion" {
@@ -425,6 +452,7 @@ resource "azurerm_subnet" "apim" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.apim_subnet_address_space]
+  default_outbound_access_enabled = false
 
   service_endpoints = [
     "Microsoft.Storage",
@@ -475,6 +503,7 @@ resource "azurerm_subnet" "foundry" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.foundry_subnet_address_space]
+  default_outbound_access_enabled = false
 
   private_endpoint_network_policies = "Disabled"
 }
@@ -940,6 +969,36 @@ resource "azurerm_private_dns_zone_virtual_network_link" "aca" {
   tags = local.common_tags
 }
 
+resource "azurerm_private_dns_a_record" "aca_wildcard" {
+  count = var.enable_aca_private_endpoint ? 1 : 0
+
+  name                = "*"
+  zone_name           = azurerm_private_dns_zone.aca[0].name
+  resource_group_name = azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = [azurerm_container_app_environment.main.static_ip_address]
+
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.aca,
+    azurerm_container_app_environment.main
+  ]
+}
+
+resource "azurerm_private_dns_a_record" "aca_internal_wildcard" {
+  count = var.enable_aca_private_endpoint ? 1 : 0
+
+  name                = "*.internal"
+  zone_name           = azurerm_private_dns_zone.aca[0].name
+  resource_group_name = azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = [azurerm_container_app_environment.main.static_ip_address]
+
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.aca,
+    azurerm_container_app_environment.main
+  ]
+}
+
 # =====================
 # MANAGED IDENTITY
 # =====================
@@ -1165,8 +1224,6 @@ resource "azurerm_container_app" "main" {
   }
 
   template {
-    revision_suffix = "init"
-
     container {
       name   = local.container_app_name
       image  = var.container_image
@@ -1235,6 +1292,10 @@ resource "azurerm_public_ip" "jumpbox_windows" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes = [
+      ip_tags,
+      zones
+    ]
   }
 }
 
@@ -1273,7 +1334,7 @@ resource "azurerm_windows_virtual_machine" "jumpbox" {
 
   os_disk {
     caching              = "ReadWrite"
-    storage_account_type = "Premium_LRS"
+    storage_account_type = "Standard_LRS"
   }
 
   source_image_reference {
@@ -1302,6 +1363,14 @@ resource "azurerm_public_ip" "bastion" {
   sku                 = "Standard"
 
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      ip_tags,
+      zones
+    ]
+  }
 }
 
 resource "azurerm_bastion_host" "main" {
