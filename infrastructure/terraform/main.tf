@@ -91,6 +91,30 @@ resource "azurerm_network_security_group" "aca" {
   tags                = local.common_tags
 
   security_rule {
+    name                       = "AllowVnetInbound"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "VirtualNetwork"
+  }
+
+  security_rule {
+    name                       = "AllowAzureLoadBalancerInbound"
+    priority                   = 130
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
     name                       = "AllowHttps"
     priority                   = 100
     direction                  = "Inbound"
@@ -1200,8 +1224,6 @@ resource "azurerm_container_app" "main" {
   }
 
   template {
-    revision_suffix = "init"
-
     container {
       name   = local.container_app_name
       image  = var.container_image
