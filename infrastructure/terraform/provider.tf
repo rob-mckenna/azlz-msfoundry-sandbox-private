@@ -12,7 +12,7 @@ provider "azurerm" {
     }
   }
 
-  skip_provider_registration = false
+  skip_provider_registration = true
 }
 
 provider "azapi" {}
