@@ -354,6 +354,7 @@ resource "azurerm_subnet" "acr" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.acr_subnet_address_space]
+  default_outbound_access_enabled = false
 
   service_endpoints = [
     "Microsoft.ContainerRegistry",
@@ -371,6 +372,7 @@ resource "azurerm_subnet" "aca" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.aca_subnet_address_space]
+  default_outbound_access_enabled = false
 
   delegation {
     name = "delegation"
@@ -411,6 +413,7 @@ resource "azurerm_subnet" "bastion" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.bastion_subnet_address_space]
+  default_outbound_access_enabled = false
 }
 
 resource "azurerm_subnet_network_security_group_association" "bastion" {
@@ -425,6 +428,7 @@ resource "azurerm_subnet" "apim" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.apim_subnet_address_space]
+  default_outbound_access_enabled = false
 
   service_endpoints = [
     "Microsoft.Storage",
@@ -475,6 +479,7 @@ resource "azurerm_subnet" "foundry" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.foundry_subnet_address_space]
+  default_outbound_access_enabled = false
 
   private_endpoint_network_policies = "Disabled"
 }
@@ -1235,6 +1240,10 @@ resource "azurerm_public_ip" "jumpbox_windows" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes = [
+      ip_tags,
+      zones
+    ]
   }
 }
 
@@ -1302,6 +1311,14 @@ resource "azurerm_public_ip" "bastion" {
   sku                 = "Standard"
 
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      ip_tags,
+      zones
+    ]
+  }
 }
 
 resource "azurerm_bastion_host" "main" {
