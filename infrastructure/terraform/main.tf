@@ -945,6 +945,36 @@ resource "azurerm_private_dns_zone_virtual_network_link" "aca" {
   tags = local.common_tags
 }
 
+resource "azurerm_private_dns_a_record" "aca_wildcard" {
+  count = var.enable_aca_private_endpoint ? 1 : 0
+
+  name                = "*"
+  zone_name           = azurerm_private_dns_zone.aca[0].name
+  resource_group_name = azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = [azurerm_container_app_environment.main.static_ip_address]
+
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.aca,
+    azurerm_container_app_environment.main
+  ]
+}
+
+resource "azurerm_private_dns_a_record" "aca_internal_wildcard" {
+  count = var.enable_aca_private_endpoint ? 1 : 0
+
+  name                = "*.internal"
+  zone_name           = azurerm_private_dns_zone.aca[0].name
+  resource_group_name = azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = [azurerm_container_app_environment.main.static_ip_address]
+
+  depends_on = [
+    azurerm_private_dns_zone_virtual_network_link.aca,
+    azurerm_container_app_environment.main
+  ]
+}
+
 # =====================
 # MANAGED IDENTITY
 # =====================
