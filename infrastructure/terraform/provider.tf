@@ -2,7 +2,6 @@ provider "azurerm" {
   features {
     virtual_machine {
       delete_os_disk_on_deletion     = true
-      graceful_shutdown              = true
       skip_shutdown_and_force_delete = false
     }
 
@@ -12,7 +11,6 @@ provider "azurerm" {
     }
   }
 
-  skip_provider_registration = true
   resource_provider_registrations = "none"
 }
 

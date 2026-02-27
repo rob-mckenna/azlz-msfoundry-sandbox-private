@@ -379,11 +379,18 @@ resource "azurerm_subnet" "acr" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.acr_subnet_address_space]
   default_outbound_access_enabled = false
+  private_endpoint_network_policies = "Disabled"
 
   service_endpoints = [
     "Microsoft.ContainerRegistry",
     "Microsoft.KeyVault"
   ]
+
+  lifecycle {
+    ignore_changes = [
+      private_endpoint_network_policies
+    ]
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "acr" {
@@ -397,6 +404,7 @@ resource "azurerm_subnet" "aca" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.aca_subnet_address_space]
   default_outbound_access_enabled = false
+  private_endpoint_network_policies = "Disabled"
 
   delegation {
     name = "delegation"
@@ -406,6 +414,12 @@ resource "azurerm_subnet" "aca" {
         "Microsoft.Network/virtualNetworks/subnets/join/action"
       ]
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      private_endpoint_network_policies
+    ]
   }
 }
 
@@ -421,9 +435,13 @@ resource "azurerm_subnet" "jumpbox" {
   address_prefixes     = [var.jumpbox_subnet_address_space]
 
   default_outbound_access_enabled = false
+  private_endpoint_network_policies = "Disabled"
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes = [
+      private_endpoint_network_policies
+    ]
   }
 }
 
@@ -438,6 +456,13 @@ resource "azurerm_subnet" "bastion" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.bastion_subnet_address_space]
   default_outbound_access_enabled = false
+  private_endpoint_network_policies = "Disabled"
+
+  lifecycle {
+    ignore_changes = [
+      private_endpoint_network_policies
+    ]
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "bastion" {
@@ -453,12 +478,19 @@ resource "azurerm_subnet" "apim" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.apim_subnet_address_space]
   default_outbound_access_enabled = false
+  private_endpoint_network_policies = "Disabled"
 
   service_endpoints = [
     "Microsoft.Storage",
     "Microsoft.Sql",
     "Microsoft.KeyVault"
   ]
+
+  lifecycle {
+    ignore_changes = [
+      private_endpoint_network_policies
+    ]
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "apim" {
@@ -524,18 +556,8 @@ resource "azurerm_container_registry" "main" {
   network_rule_bypass_option = "AzureServices"
 
   quarantine_policy_enabled = false
-
-  dynamic "retention_policy" {
-    for_each = var.acr_sku == "Premium" ? [1] : []
-    content {
-      days    = 30
-      enabled = true
-    }
-  }
-
-  trust_policy {
-    enabled = false
-  }
+  retention_policy_in_days = var.acr_sku == "Premium" ? 30 : null
+  trust_policy_enabled     = false
 
   identity {
     type = "SystemAssigned"
@@ -569,6 +591,12 @@ resource "azapi_resource" "foundry_account" {
       disableLocalAuth       = false
       publicNetworkAccess    = var.enable_foundry_private_endpoint ? "Disabled" : "Enabled"
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      body
+    ]
   }
 }
 
@@ -1032,7 +1060,8 @@ resource "azurerm_container_app_environment" "main" {
   lifecycle {
     prevent_destroy = true
     ignore_changes = [
-      infrastructure_resource_group_name
+      infrastructure_resource_group_name,
+      workload_profile
     ]
   }
 
@@ -1057,6 +1086,13 @@ resource "azurerm_container_app_environment" "cicd" {
   log_analytics_workspace_id     = azurerm_log_analytics_workspace.main.id
   infrastructure_subnet_id       = azurerm_subnet.cicd[0].id
   internal_load_balancer_enabled = false
+
+  lifecycle {
+    ignore_changes = [
+      infrastructure_resource_group_name,
+      workload_profile
+    ]
+  }
 
   tags = merge(local.common_tags, { purpose = "cicd" })
 
@@ -1269,6 +1305,13 @@ resource "azurerm_container_app" "main" {
   }
 
   tags = local.common_tags
+
+  lifecycle {
+    ignore_changes = [
+      template,
+      workload_profile_name
+    ]
+  }
 
   depends_on = [
     azurerm_role_assignment.aca_acr_pull,

@@ -13,17 +13,17 @@ min_replicas = 1
 enable_container_app_external = false
 
 # ACR
-acr_sku                     = "Standard" # Cost optimization for dev (no private endpoints)
-enable_acr_private_endpoint = false
+acr_sku                     = "Premium" # Must stay Premium with existing private endpoints
+enable_acr_private_endpoint = true
 
 # API Management
-apim_sku                     = "Developer" # Cost optimization for dev
-enable_apim_private_endpoint = false
+apim_sku                     = "StandardV2" # Existing deployed SKU; in-place downgrade unsupported
+enable_apim_private_endpoint = true
 
 # Microsoft Foundry
 enable_foundry_private_endpoint = true
 foundry_sku                     = "S0"
-foundry_project_name            = "dev-project"
+foundry_project_name            = "main-project"
 
 # CI/CD
 enable_cicd_runner               = true
@@ -37,7 +37,8 @@ windows_vm_size = "Standard_D4s_v5"
 
 # Tags
 tags = {
+  project         = "azlz"
+  cost_center     = "engineering"
+  created_by      = "terraform"
   environment     = "dev"
-  managed_by      = "terraform"
-  github_workflow = "deploy-infrastructure"
 }
