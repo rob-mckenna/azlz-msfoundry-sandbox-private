@@ -96,20 +96,29 @@ jobs:
           echo "Branch: $BRANCH"
           echo "Tags: $TAGS"
 
-      - name: Login to Azure Container Registry
-        uses: docker/login-action@v3
+      - name: Login to Azure
+        uses: azure/login@v1
         with:
-          registry: ${{ env.REGISTRY_URL }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          creds: ${{ secrets.DEV_AZURE_CREDENTIALS }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image via ACR Tasks
         id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+        run: |
+          # Strip protocol prefix and .azurecr.io suffix to get just the registry name
+          ACR_NAME=$(echo "${{ env.REGISTRY_URL }}" | sed 's|.*://||; s/\.azurecr\.io.*//')
+          BRANCH="${{ github.ref_name }}"
+
+          # Build using ACR Tasks (runs within Azure, bypasses IP firewall restrictions).
+          # Apply secondary branch tag if applicable, otherwise only push the SHA tag.
+          if [ "$BRANCH" = "main" ]; then
+            az acr build --registry "$ACR_NAME" --image "azlz-app:${{ github.sha }}" --image "azlz-app:latest" .
+          elif [ "$BRANCH" = "qa" ]; then
+            az acr build --registry "$ACR_NAME" --image "azlz-app:${{ github.sha }}" --image "azlz-app:qa-latest" .
+          elif [ "$BRANCH" = "develop" ]; then
+            az acr build --registry "$ACR_NAME" --image "azlz-app:${{ github.sha }}" --image "azlz-app:develop-latest" .
+          else
+            az acr build --registry "$ACR_NAME" --image "azlz-app:${{ github.sha }}" .
+          fi
 
   # =====================
   # CD: DEPLOY
