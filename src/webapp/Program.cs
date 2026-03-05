@@ -29,22 +29,18 @@ app.MapHealthChecks("/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.
 // API endpoints
 app.MapGet("/", GetInfo)
     .WithName("GetInfo")
-    .WithOpenApi()
     .WithDescription("Get application information");
 
 app.MapGet("/api/info", GetApiInfo)
     .WithName("GetApiInfo")
-    .WithOpenApi()
     .WithDescription("Get detailed API information");
 
 app.MapGet("/api/environment", GetEnvironment)
     .WithName("GetEnvironment")
-    .WithOpenApi()
     .WithDescription("Get environment information");
 
 app.MapPost("/api/echo", PostEcho)
     .WithName("PostEcho")
-    .WithOpenApi()
     .WithDescription("Echo back the request body");
 
 app.Run();
