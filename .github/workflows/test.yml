@@ -13,7 +13,12 @@ on:
     branches:
       - main
       - develop
+      - qa
   workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
 
 jobs:
   # =====================
@@ -45,8 +50,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd src/webapp
-          dotnet test -c Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" || EXIT_CODE=$?
-          exit ${EXIT_CODE:-0}
+          dotnet test -c Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         if: always()
@@ -61,14 +65,6 @@ jobs:
         with:
           files: src/webapp/**/test-results.trx
           check_name: .NET Unit Tests
-
-      - name: Code coverage
-        if: always()
-        run: |
-          cd src/webapp
-          echo "## Code Coverage" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Test results available in build artifacts" >> $GITHUB_STEP_SUMMARY
 
   # =====================
   # LINTING & CODE QUALITY
@@ -91,16 +87,15 @@ jobs:
           cd src/webapp
           dotnet restore
 
-      - name: Analyze code style
+      - name: Enforce code style in build
         run: |
           cd src/webapp
           dotnet build -c Release --no-restore /p:EnforceCodeStyleInBuild=true
-        continue-on-error: true
 
-      - name: Check for security vulnerabilities
+      - name: Fail on vulnerable packages
         run: |
           cd src/webapp
-          dotnet list package --outdated --vulnerable || true
+          dotnet list package --vulnerable --include-transitive
 
   # =====================
   # DOCKERFILE LINTING
@@ -129,23 +124,12 @@ jobs:
     if: always()
 
     steps:
-      - name: Tests passed
-        if: needs.test.result == 'success'
+      - name: Print results
         run: |
-          echo "✓ All tests passed"
+          echo "test: ${{ needs.test.result }}"
+          echo "lint: ${{ needs.lint.result }}"
+          echo "dockerfile: ${{ needs.dockerfile.result }}"
 
-      - name: Tests failed
-        if: needs.test.result == 'failure'
-        run: |
-          echo "✗ Tests failed"
-          exit 1
-
-      - name: Code quality checks
-        if: needs.lint.result == 'success'
-        run: |
-          echo "✓ Code quality checks passed"
-
-      - name: Docker lint passes
-        if: needs.dockerfile.result == 'success'
-        run: |
-          echo "✓ Dockerfile lint passes"
+      - name: Fail if any required job failed
+        if: needs.test.result != 'success' || needs.lint.result != 'success' || needs.dockerfile.result != 'success'
+        run: exit 1
