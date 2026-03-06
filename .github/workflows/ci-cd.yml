@@ -100,6 +100,9 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.DEV_AZURE_CREDENTIALS }}
+          # allow-no-subscriptions: required when the service principal has ACR permissions
+          # at the resource level but is not assigned to a subscription via RBAC.
+          allow-no-subscriptions: true
 
       - name: Build and push Docker image via ACR Tasks
         id: build
