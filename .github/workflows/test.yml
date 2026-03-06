@@ -26,7 +26,7 @@ jobs:
   # =====================
   test:
     name: Unit Tests (.NET)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -71,7 +71,7 @@ jobs:
   # =====================
   lint:
     name: Code Quality Checks
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
